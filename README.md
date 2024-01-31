@@ -1,29 +1,69 @@
-**Project Name:** fivem-screen-manager
+# FiveM Server Management Script
 
-**Description:**
+This shell script is designed to simplify the management of a FiveM server within a `screen` session on a Linux server. It provides various commands for controlling the server, checking its status, and attaching to its session.
 
-The `fivem-screen-manager` is a versatile script designed to simplify the management of a FiveM server within a `screen` session on a Linux server. It provides a set of commands for starting, stopping, and checking the status of the `screen` session associated with your FiveM server, making server management a breeze.
+## Prerequisites
 
-**Features:**
+Before using this script, ensure that the following prerequisites are met:
 
-- Start your FiveM server within a detached `screen` session.
-- Stop the FiveM server gracefully by terminating the `screen` session.
-- Check the status of the `screen` session to monitor server activity.
-- Easy-to-use command-line interface for managing your FiveM server.
+- **Linux Server**: The script is intended for use on a Linux server environment.
+- **Directories**: You must have two directories, "alpine" and "resources," in the same directory as this script.
+- **Configuration File**: A configuration file named "server.cfg" is required for the server to function correctly.
 
-**Usage:**
+## Usage
 
-- Clone or download this repository to your Linux server.
-- Customize the `COMMAND` variable in the script to specify the command for your FiveM server.
-- Run the script with the following commands:
-  - `./start_fivem_server.sh start`: Start the FiveM server.
-  - `./start_fivem_server.sh stop`: Stop the FiveM server.
-  - `./start_fivem_server.sh status`: Check the status of the server.
+To use the script, execute it with the following commands:
 
-**Contributions:**
+### Start the Server
 
-Contributions and enhancements to this project are welcome. Feel free to fork the repository, make improvements, and submit pull requests.
+```bash
+./start_fivem_server.sh start
+```
 
-**License:**
+- Checks if the screen session is already running and starts the server if it's not.
+- Creates a detached `screen` session with the specified command from "run.sh."
 
-This project is open-source and available under the [MIT License](LICENSE).
+### Stop the Server
+
+```bash
+./start_fivem_server.sh stop
+```
+
+- Checks if the screen session is running and stops it gracefully.
+
+### Check Server Status
+
+```bash
+./start_fivem_server.sh status
+```
+
+- Checks and displays the status of the screen session.
+
+### Attach to Server Session
+
+```bash
+./start_fivem_server.sh attach
+```
+
+- Attaches to the screen session if it's running, allowing you to interact with the server.
+- Detach from the session using `Ctrl+A` followed by `D`.
+
+### Additional Commands
+
+If you provide an invalid command or require usage information, the script will display the usage instructions.
+
+```bash
+Usage: ./start_fivem_server.sh {start|stop|status|attach}
+```
+
+## Error Handling
+
+The script checks for the existence of required directories and configuration files and provides error messages when necessary. If any of the prerequisites are missing, it will prevent the script from running.
+
+## Contributions
+
+Contributions and enhancements to this script are welcome. Feel free to fork the repository, make improvements, and submit pull requests.
+
+## License
+
+This project is open-source and available under the MIT License.
