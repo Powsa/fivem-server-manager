@@ -19,12 +19,22 @@ check_dependencies() {
         echo "The following packages are required but not installed: ${missing_deps[*]}"
         read -p "Would you like to install them now? (y/n): " answer
         if [[ "$answer" = "y" ]]; then
-            if [ "$(uname -s)" = "Linux" ]; then
-                sudo apt-get update && sudo apt-get install -y "${missing_deps[@]}"
-                echo "Dependencies installed."
-            else
-                echo "Dependency installation is only supported on Linux."
-            fi
+            case "$(uname -s)" in
+                "Linux")
+                    sudo apt-get update && sudo apt-get install -y "${missing_deps[@]}"
+                    ;;
+                "Darwin")
+                    if ! command -v brew &> /dev/null; then
+                        echo "Installing Homebrew..."
+                        /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+                    fi
+                    brew install "${missing_deps[@]}"
+                    ;;
+                *)
+                    echo "Dependency installation is not supported on this platform. Please ensure git and xz are installed."
+                    ;;
+            esac
+            echo "Dependencies installed."
         else
             exit 1
         fi
