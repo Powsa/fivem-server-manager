@@ -126,12 +126,10 @@ Once the script is executable, you can use it to manage your FiveM server. Here'
 
 - **When to use it**: Run this command if you are unsure of the available commands or need a reminder of how to use the script.
 
-
-
 ## Error Handling
 
 The script includes checks for required dependencies and displays error messages if necessary. It ensures that all prerequisites are met before proceeding with server operations.
 
 ## Contributions
 
-Your contributions to improve or enhance this script are welcome. Feel free to modify, fork, or suggest improvements through pull requests
+Your contributions to improve or enhance this script are welcome. Feel free to modify, fork, or suggest improvements through pull requests.

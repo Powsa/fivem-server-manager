@@ -36,8 +36,8 @@ create_server() {
     check_dependencies
 
     read -p "Enter a name for your server (e.g., my-fivem-server): " server_name
-    echo "Please visit 'https://runtime.fivem.net/artifacts/fivem/build_proot_linux/master/' to find the latest linux recommended server build."
-    echo "Please enter the URL of the server build (ending with 'fx.tar.xz'): "
+    echo "Please visit 'https://runtime.fivem.net/artifacts/fivem/build_proot_linux/master/' to find the latest Linux recommended server build."
+    echo "Please enter the URL of the Linux recommended server build (ending with 'fx.tar.xz'): "
     read -p "Server Build URL: " server_build_url
 
     local script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
@@ -47,7 +47,7 @@ create_server() {
     mkdir -p "$server_directory" || exit 1
 
     cd "$server_directory" || exit 1
-    echo "Downloading server build from $server_build_url..."
+    echo "Downloading Linux recommended server build from $server_build_url..."
     
     if [ "$(uname -s)" = "Linux" ]; then
         wget -q "$server_build_url" -O fx.tar.xz && tar xf fx.tar.xz
@@ -119,6 +119,14 @@ manage_screen() {
                 log_message "Checked status of screen session '$screen_name': not running."
             fi
             ;;
+        "attach")
+            if screen -list | grep -q "\.$screen_name"; then
+                screen -r "$screen_name"
+            else
+                echo "Screen session '$screen_name' is not running."
+                log_message "Attempted to attach to screen session '$screen_name', but it is not running."
+            fi
+            ;;
         *)
             echo "Invalid command: $1"
             log_message "Invalid command: $1"
@@ -152,9 +160,10 @@ show_menu() {
         echo "3. Stop Server"
         echo "4. Restart Server"
         echo "5. Server Status"
-        echo "6. Exit"
+        echo "6. Attach to Server Session"
+        echo "7. Exit"
         echo ""
-        read -p "Enter choice [1-6]: " choice
+        read -p "Enter choice [1-7]: " choice
 
         case $choice in
             1) create_server ;;
@@ -162,8 +171,9 @@ show_menu() {
             3) manage_screen stop ;;
             4) manage_screen restart ;;
             5) manage_screen status ;;
-            6) echo "Exiting..."; exit 0 ;;
-            *) echo "Invalid option. Please enter a number between 1 and 6."; read -n 1 ;;
+            6) manage_screen attach ;;
+            7) echo "Exiting..."; exit 0 ;;
+            *) echo "Invalid option. Please enter a number between 1 and 7."; read -n 1 ;;
         esac
     done
 }
