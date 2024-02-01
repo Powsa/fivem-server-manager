@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# Function to log messages with a timestamp
+log_message() {
+    local log_file="${server_directory}/server.log"
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> "$log_file"
+}
+
 # Function to check for required dependencies and offer to install them
 check_dependencies() {
     local missing_deps=()
@@ -29,7 +35,7 @@ create_server() {
     read -p "Enter the URL of the server build: " server_build_url
 
     local script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-    local server_directory="$script_dir/$server_name"
+    server_directory="$script_dir/$server_name"
     
     echo "Creating server directory at $server_directory..."
     mkdir -p "$server_directory" || exit 1
@@ -43,23 +49,16 @@ create_server() {
     mkdir -p "$resources_directory"
 
     local server_cfg_file="$server_directory/server.cfg"
-    echo "Creating server.cfg file..."
     touch "$server_cfg_file"
 
     echo "Setup completed! Configure your server in $server_cfg_file"
-    echo "To start your server, run this script again with 'start' option: $(basename "${BASH_SOURCE[0]}") start"
-}
-
-# Function to log messages with a timestamp
-log_message() {
-    local log_file="${server_directory}/server.log"
-    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> "$log_file"
+    log_message "Server setup completed for $server_name."
 }
 
 # Function to manage the screen session
 manage_screen() {
     local screen_name="$server_name"
-    local command="./$(basename "${BASH_SOURCE[0]}") $1"
+    local command="bash -c './run.sh +exec server.cfg'"
 
     case "$1" in
         "start")
@@ -83,19 +82,9 @@ manage_screen() {
             fi
             ;;
         "restart")
-            if screen -list | grep -q "\.$screen_name"; then
-                screen -S "$screen_name" -X quit
-                echo "Stopping screen session '$screen_name' for restart."
-                log_message "Stopping screen session '$screen_name' for restart."
-            else
-                echo "Screen session '$screen_name' is not running, starting it now."
-                log_message "Screen session '$screen_name' was not running, starting it now."
-            fi
-            # Wait a bit to ensure the session has stopped
+            manage_screen stop
             sleep 2
-            screen -S "$screen_name" -d -m $command
-            echo "Restarted screen session '$screen_name' with command: $command"
-            log_message "Restarted screen session '$screen_name' with command: $command"
+            manage_screen start
             ;;
         "status")
             if screen -list | grep -q "\.$screen_name"; then
@@ -106,32 +95,39 @@ manage_screen() {
                 log_message "Checked status of screen session '$screen_name': not running."
             fi
             ;;
-        "attach")
-            if screen -list | grep -q "\.$screen_name"; then
-                screen -r "$screen_name"
-                log_message "Attached to screen session '$screen_name'."
-            else
-                echo "Screen session '$screen_name' is not running."
-                log_message "Attempted to attach to screen session '$screen_name', but it is not running."
-            fi
-            ;;
         *)
-            echo "Usage: $0 {create|start|stop|status|attach|restart}"
+            echo "Invalid command: $1"
             log_message "Invalid command: $1"
             exit 1
             ;;
     esac
 }
 
-case "$1" in
-    "create")
-        create_server
-        ;;
-    "start" | "stop" | "status" | "attach" | "restart")
-        manage_screen "$1"
-        ;;
-    *)
-        echo "Usage: $0 {create|start|stop|status|attach|restart}"
-        exit 1
-        ;;
-esac
+# Function to display an interactive menu
+show_menu() {
+    while true; do
+        clear
+        echo "FiveM Server Management"
+        echo "1. Create Server"
+        echo "2. Start Server"
+        echo "3. Stop Server"
+        echo "4. Restart Server"
+        echo "5. Server Status"
+        echo "6. Exit"
+        echo ""
+        read -p "Enter choice [1-6]: " choice
+
+        case $choice in
+            1) create_server ;;
+            2) manage_screen start ;;
+            3) manage_screen stop ;;
+            4) manage_screen restart ;;
+            5) manage_screen status ;;
+            6) echo "Exiting..."; exit 0 ;;
+            *) echo "Invalid option. Please enter a number between 1 and 6."; read -n 1 ;;
+        esac
+    done
+}
+
+# Start the script with the menu
+show_menu
