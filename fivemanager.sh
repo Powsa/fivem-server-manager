@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Function to check for required dependencies
+# Function to check for required dependencies and offer to install them
 check_dependencies() {
     local missing_deps=()
     for dep in git xz; do
@@ -10,8 +10,14 @@ check_dependencies() {
     done
 
     if [ ${#missing_deps[@]} -ne 0 ]; then
-        echo "Error: The following packages are required but not installed: ${missing_deps[*]}"
-        exit 1
+        echo "The following packages are required but not installed: ${missing_deps[*]}"
+        read -p "Would you like to install them now? (y/n): " answer
+        if [[ "$answer" = "y" ]]; then
+            sudo apt-get update && sudo apt-get install -y "${missing_deps[@]}"
+            echo "Dependencies installed."
+        else
+            exit 1
+        fi
     fi
 }
 
@@ -38,16 +44,17 @@ create_server() {
 
     local server_cfg_file="$server_directory/server.cfg"
     echo "Creating server.cfg file..."
-    cat <<EOL > "$server_cfg_file"
-# Your server configuration file.
-# Customize as needed.
-# sv_licenseKey "your_license_key_here"
-EOL
+    touch "$server_cfg_file"
 
     echo "Setup completed! Configure your server in $server_cfg_file"
     echo "To start your server, run this script again with 'start' option: $(basename "${BASH_SOURCE[0]}") start"
 }
 
+# Function to log messages with a timestamp
+log_message() {
+    local log_file="${server_directory}/server.log"
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> "$log_file"
+}
 
 # Function to manage the screen session
 manage_screen() {
@@ -58,35 +65,59 @@ manage_screen() {
         "start")
             if screen -list | grep -q "\.$screen_name"; then
                 echo "Screen session '$screen_name' is already running."
+                log_message "Attempted to start screen session '$screen_name', but it is already running."
             else
                 screen -S "$screen_name" -d -m $command
                 echo "Started screen session '$screen_name' with command: $command"
+                log_message "Started screen session '$screen_name' with command: $command"
             fi
             ;;
         "stop")
             if screen -list | grep -q "\.$screen_name"; then
                 screen -S "$screen_name" -X quit
                 echo "Stopped screen session '$screen_name'."
+                log_message "Stopped screen session '$screen_name'."
             else
                 echo "Screen session '$screen_name' is not running."
+                log_message "Attempted to stop screen session '$screen_name', but it is not running."
             fi
+            ;;
+        "restart")
+            if screen -list | grep -q "\.$screen_name"; then
+                screen -S "$screen_name" -X quit
+                echo "Stopping screen session '$screen_name' for restart."
+                log_message "Stopping screen session '$screen_name' for restart."
+            else
+                echo "Screen session '$screen_name' is not running, starting it now."
+                log_message "Screen session '$screen_name' was not running, starting it now."
+            fi
+            # Wait a bit to ensure the session has stopped
+            sleep 2
+            screen -S "$screen_name" -d -m $command
+            echo "Restarted screen session '$screen_name' with command: $command"
+            log_message "Restarted screen session '$screen_name' with command: $command"
             ;;
         "status")
             if screen -list | grep -q "\.$screen_name"; then
                 echo "Screen session '$screen_name' is running."
+                log_message "Checked status of screen session '$screen_name': running."
             else
                 echo "Screen session '$screen_name' is not running."
+                log_message "Checked status of screen session '$screen_name': not running."
             fi
             ;;
         "attach")
             if screen -list | grep -q "\.$screen_name"; then
                 screen -r "$screen_name"
+                log_message "Attached to screen session '$screen_name'."
             else
                 echo "Screen session '$screen_name' is not running."
+                log_message "Attempted to attach to screen session '$screen_name', but it is not running."
             fi
             ;;
         *)
-            echo "Usage: $0 {create|start|stop|status|attach}"
+            echo "Usage: $0 {create|start|stop|status|attach|restart}"
+            log_message "Invalid command: $1"
             exit 1
             ;;
     esac
@@ -96,11 +127,11 @@ case "$1" in
     "create")
         create_server
         ;;
-    "start" | "stop" | "status" | "attach")
+    "start" | "stop" | "status" | "attach" | "restart")
         manage_screen "$1"
         ;;
     *)
-        echo "Usage: $0 {create|start|stop|status|attach}"
+        echo "Usage: $0 {create|start|stop|status|attach|restart}"
         exit 1
         ;;
 esac
