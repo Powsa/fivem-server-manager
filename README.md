@@ -1,135 +1,71 @@
 # FiveM Server Management Script
 
-This shell script facilitates the management and operation of a FiveM server within a Linux environment. It automates tasks such as server creation, starting, stopping, and monitoring within a `screen` session.
+This tutorial covers the setup and use of a Bash script designed to manage a FiveM server. The script automates several tasks, including checking for necessary software, starting and stopping the server, and creating a new server with a default configuration.
 
 ## Prerequisites
 
-Before using this script, ensure the following conditions are met:
+Before running the script, ensure your system has the following software installed:
 
-- **Linux Environment**: The script is intended for use on Linux servers.
-- **Git and xz-utils**: These packages must be installed for the script to function correctly.
-- **Server Directory**: The script will create a new directory for the server based on your input.
-- **Configuration File**: The script generates a basic `server.cfg` file, which you can customize as needed.
+- Git
+- xz-utils
+- curl
+- screen
+
+The script includes checks for these dependencies and provides instructions for installing any that are missing.
 
 ## Installation
 
-To install and use the script, you'll need to follow these steps:
+1. **Download the Script**: Clone this repository or download the script file directly to your local machine.
+2. **Make the Script Executable**: Change the script's permissions to make it executable. Open a terminal and navigate to the directory containing the script. Run:
 
-1. **Obtain the Script**:
+    ```bash
+    chmod +x fivem_server_management.sh
+    ```
 
-   You have two main options for obtaining the script:
+3. **Run the Script**: Execute the script with:
 
-   - **Direct Download**: If the script is hosted online (such as on a GitHub repository or a website), you can download it directly. Here's how:
-     - Go to the source URL where the script is hosted.
-     - Look for a download option or link. On GitHub, this might be a "Download" button or a command to clone the repository.
-     - If it's a GitHub repository, you can clone it with:
-       ```bash
-       git clone https://github.com/Syslogine/fivem-server-manager.git
-       ```
-     - Save the script file to a directory of your choice on your Linux server.
-
-   - **Manual Creation**: If direct download is not an option, or if you prefer creating the file manually, follow these steps:
-     - Open a text editor on your Linux server.
-     - Create a new file with a `.sh` extension (for example, `fivem_manager.sh`).
-     - Copy and paste the content of the provided script into this new file.
-     - Save the file in a directory where you wish to run the server management script.
-
-2. **Make the Script Executable**:
-   
-   Once you have the script on your server, you need to make it executable. This allows the Linux system to run the script as a program. Here's how to do it:
-
-   - Open your terminal.
-   - Navigate to the directory where you saved the script. For example, if you saved it in `/home/user/scripts`, use the command:
-     ```bash
-     cd /home/user/scripts
-     ```
-   - Change the permissions of the script file to make it executable. Replace `fivemanager.sh` with the actual name of your script file:
-     ```bash
-     chmod +x fivemanager.sh
-     ```
-   - This command sets the execute permission for the user who owns the file, enabling you to run the script.
-
-After completing these steps, the script will be ready to use. You can run it from the terminal in the directory where it's located using commands like `./fivemanager.sh create`, `./fivemanager.sh start`, and so on, as described in the Usage section of the documentation.
+    ```bash
+    ./fivem_server_management.sh
+    ```
 
 ## Usage
 
-Once the script is executable, you can use it to manage your FiveM server. Here's a breakdown of each command and its function:
+The script provides a menu with several options for managing your FiveM server:
 
-### Create the Server
+1. **Create a New Server**: This option clones the necessary FiveM server data, downloads the latest FiveM server build, extracts it, removes unnecessary files, and creates a basic `server.cfg`.
 
-```bash
-./fivemanager.sh create
-```
+2. **Start the Server**: Initiates the FiveM server using a screen session.
 
-- **What it does**:
-  - **Prompts for Server Name**: You will be asked to enter a name for your server. This name is used to create a dedicated directory for your server.
-  - **Prompts for Server Build URL**: You need to provide the URL of the FiveM server build you wish to use. This is where your server will download the necessary files from.
-  - **Checks Dependencies**: The script checks if required dependencies (like Git and xz-utils) are installed. If not, it will alert you.
-  - **Creates Directories and Configuration Files**: It sets up the server's directory structure, including a resources folder and a basic `server.cfg` file for initial configuration.
+3. **Stop the Server**: Gracefully stops the FiveM server.
 
-- **When to use it**: Run this command when you first set up your FiveM server or when you want to set up a new server instance.
+4. **Monitor the Server Console**: Attaches to the screen session hosting the FiveM server, allowing you to monitor its output.
 
-### Start the Server
+6. **Exit**: Closes the script.
 
-```bash
-./fivemanager.sh start
-```
+### Creating a New Server
 
-- **What it does**:
-  - **Starts the Server in a Screen Session**: If the server isn't already running, the script will start it in a detached `screen` session. This allows the server to run in the background.
-  - **Handles Multiple Sessions**: If a session with the server's name already exists, it prevents starting another instance, ensuring that you don't accidentally run multiple servers.
+When creating a new server, you'll be prompted to enter a server name. The script then performs the following actions:
 
-- **When to use it**: Use this command to start the server after creating it or whenever you need to restart the server after stopping it.
+- Creates a server directory.
+- Clones the `cfx-server-data` repository into the directory.
+- Downloads and extracts the latest FiveM build.
+- Removes the downloaded archive and any `.gitignore` files.
+- Creates and populates a default `server.cfg` file with basic server setup.
 
-### Stop the Server
+### Configuration
 
-```bash
-./fivemanager.sh stop
-```
+After creating a new server, you may want to customize the `server.cfg` file. This file is located in your server directory and can be edited to adjust server settings, resources, and other configurations.
 
-- **What it does**:
-  - **Stops the Server Gracefully**: This command stops the running screen session that contains your server, effectively stopping the server without abrupt termination.
-  
-- **When to use it**: Run this command to stop the server for maintenance, updates, or when it's no longer in use.
+## Troubleshooting
 
-### Check Server Status
+If you encounter issues while running the script, ensure that:
 
-```bash
-./fivemanager.sh status
-```
+- All prerequisites are correctly installed.
+- You have sufficient permissions to execute the script and access the directories and files it manipulates.
+- Your internet connection is stable, as the script downloads data from the internet.
 
-- **What it does**:
-  - **Displays the Server's Status**: The script checks whether the server's screen session is active and informs you if the server is running or not.
+For detailed error messages, refer to the script's output. It provides specific instructions for resolving common issues.
 
-- **When to use it**: This command is useful for quickly checking if your server is up and running, especially useful in troubleshooting scenarios.
+## Contributing
 
-### Attach to Server Session
-
-```bash
-./fivemanager.sh attach
-```
-
-- **What it does**:
-  - **Attaches to the Active Server Session**: This allows you to interact directly with the server's console. It's useful for server administration tasks that require direct console access.
-  - **Detaching**: To detach and leave the server running in the background, press `Ctrl+A` followed by `D`.
-
-- **When to use it**: Use this command when you need to perform manual operations or checks on the server through the console.
-
-### Invalid Command or Help
-
-```bash
-./fivemanager.sh
-```
-
-- **What it does**:
-  - **Displays Usage Instructions**: If you provide an invalid command or no arguments, the script will display a help message outlining the valid commands and their basic usage.
-
-- **When to use it**: Run this command if you are unsure of the available commands or need a reminder of how to use the script.
-
-## Error Handling
-
-The script includes checks for required dependencies and displays error messages if necessary. It ensures that all prerequisites are met before proceeding with server operations.
-
-## Contributions
-
-Your contributions to improve or enhance this script are welcome. Feel free to modify, fork, or suggest improvements through pull requests.
+Contributions to the script or documentation are welcome. Please feel free to fork the repository, make your changes, and submit a pull request.
