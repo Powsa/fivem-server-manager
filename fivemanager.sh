@@ -3,39 +3,34 @@
 # Initialize an error message variable
 errorMsg=""
 
-# Check for git
-if ! command -v git &>/dev/null; then
-    errorMsg="${errorMsg}Error: Git is not installed. Please install it and try again.\n"
-fi
+# Define the required dependencies
+dependencies=("git" "xz" "curl")
 
-# Check for xz
-if ! command -v xz &>/dev/null; then
-    errorMsg="${errorMsg}Error: xz-utils is not installed. Please install it and try again.\n"
-fi
+# Function to install a missing dependency
+install_dependency() {
+    local dependency="$1"
+    echo "Installing $dependency..."
+    if sudo apt-get update && sudo apt-get install -y "$dependency"; then
+        echo "$dependency installed successfully."
+    else
+        echo "Failed to install $dependency. Please install it manually and try again."
+        exit 1
+    fi
+}
 
-# Check for curl
-if ! command -v curl &>/dev/null; then
-    errorMsg="${errorMsg}Error: curl is not installed. Please install it and try again.\n"
-fi
-
-
+# Loop through the dependencies and check if they are installed
+for dependency in "${dependencies[@]}"; do
+    if ! command -v "$dependency" &>/dev/null; then
+        errorMsg="${errorMsg}Error: $dependency is not installed. Attempting to install it...\n"
+        install_dependency "$dependency"
+    fi
+done
 
 # Display error messages and exit if any checks failed
 if [ ! -z "$errorMsg" ]; then
     printf "$errorMsg"
     exit 1
 fi
-
-if ! command -v git &>/dev/null; then
-    read -p "Git is not installed. Would you like to install it now? (y/n) " answer
-    if [[ "$answer" == "y" ]]; then
-        sudo apt-get update && sudo apt-get install git
-    else
-        echo "Git is required to proceed. Exiting."
-        exit 1
-    fi
-fi
-
 
 # Function to create a screen session if it doesn't exist
 create_screen_session() {
@@ -46,13 +41,40 @@ create_screen_session() {
 
 # Function to start the FiveM server
 start_server() {
-    if [ -z "$server_dir" ] || [ -z "$server_name" ]; then
-        echo "Server directory or name not set. Cannot start server."
+    # Get the directory where the script is located
+    script_dir="$(dirname "$(realpath "$0")")"
+    
+    # List available servers for the user to choose
+    available_servers=("$script_dir"/*)
+
+    if [ ${#available_servers[@]} -eq 0 ]; then
+        echo "No servers found in the server directory. Cannot start any servers."
         return 1
     fi
-    create_screen_session
-    screen -S FiveM -p 0 -X stuff "cd $server_dir/$server_name && ./run.sh +exec server.cfg\n"
+
+    echo "Available servers:"
+    for ((i=0; i<${#available_servers[@]}; i++)); do
+        server_name=$(basename "${available_servers[$i]}")
+        echo "$((i+1)). $server_name"
+    done
+
+    # Ask the user for their choice
+    read -p "Enter the number of the server you want to start: " server_choice
+
+    # Validate the user's choice
+    if ! [[ "$server_choice" =~ ^[0-9]+$ ]] || [ "$server_choice" -lt 1 ] || [ "$server_choice" -gt ${#available_servers[@]} ]; then
+        echo "Invalid choice. Please enter a valid number."
+        return 1
+    fi
+
+    selected_server="${available_servers[$((server_choice-1))]}"
+    
+    # Create a screen session for the selected server and run the run.sh script within screen
+    screen -dmS "fivem_server_$(basename "$selected_server")" bash -c "cd '$selected_server' && ./run.sh"
+
+    echo "Started the server: $(basename "$selected_server")"
 }
+
 
 # Function to stop the FiveM server
 stop_server() {
@@ -61,9 +83,38 @@ stop_server() {
 
 # Function to monitor the FiveM server's console output
 monitor_server() {
-    screen -r FiveM
-}
+    # Get the directory where the script is located
+    script_dir="$(dirname "$(realpath "$0")")"
+    
+    # List available servers for the user to choose
+    available_servers=("$script_dir"/*)
 
+    if [ ${#available_servers[@]} -eq 0 ]; then
+        echo "No servers found in the server directory. Cannot monitor any servers."
+        return 1
+    fi
+
+    echo "Available servers:"
+    for ((i=0; i<${#available_servers[@]}; i++)); do
+        server_name=$(basename "${available_servers[$i]}")
+        echo "$((i+1)). $server_name"
+    done
+
+    # Ask the user for their choice
+    read -p "Enter the number of the server you want to monitor: " server_choice
+
+    # Validate the user's choice
+    if ! [[ "$server_choice" =~ ^[0-9]+$ ]] || [ "$server_choice" -lt 1 ] || [ "$server_choice" -gt ${#available_servers[@]} ]; then
+        echo "Invalid choice. Please enter a valid number."
+        return 1
+    fi
+
+    selected_server="${available_servers[$((server_choice-1))]}"
+    screen_name="fivem_server_$(basename "$selected_server")"
+    
+    # Attach to the selected server's screen session
+    screen -r "$screen_name"
+}
 # Function to create a new server directory and configuration file
 create_server() {
     read -p "Enter the desired server name: " server_name
