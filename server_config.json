@@ -1,6 +1,0 @@
-{
-  "server_name": "my-fivem-server",
-  "dependencies": ["git", "xz", "jq"],
-  "server_build_url": "https://example.com/fx.tar.xz",
-  "license_key": "your_license_key_here"
-}
