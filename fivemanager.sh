@@ -143,24 +143,14 @@ create_server() {
     local full_url="${base_url}${build_url}"
     full_url="${full_url/.\//}"
 
-    echo "The script intends to download the FiveM build from:"
-    echo "$full_url"
-    echo -n "Do you want to download and use this build (y/n)? "
-
-    read -r answer
-    if [[ "$answer" =~ ^[Yy]$ ]]; then
-        echo "Downloading the FiveM build from: $full_url"
-        download_result=$(curl -o "fx.tar.xz" "$full_url" 2>&1)
-        echo "$download_result"
-        if [ $? -ne 0 ]; then
-            echo "Download failed. Check the above output for detailed information."
-            exit 1
-        else
-            echo "Download successful."
-        fi
-    else
-        echo "User chose not to download the build. Exiting."
+    echo "Downloading the FiveM build from: $full_url"
+    download_result=$(curl -o "fx.tar.xz" "$full_url" 2>&1)
+    echo "$download_result"
+    if [ $? -ne 0 ]; then
+        echo "Download failed. Check the above output for detailed information."
         exit 1
+    else
+        echo "Download successful."
     fi
 
     echo "Extracting the server build..."
@@ -183,8 +173,6 @@ create_server() {
 }
 
 
-
-
 # Main menu
 while true; do
     clear
@@ -202,7 +190,7 @@ while true; do
         2) start_server ;;
         3) stop_server ;;
         4) monitor_server ;;
-        6) exit 0 ;;
+        6 | "exit" | "stop") exit 0 ;;
         *) echo "Invalid choice." ;;
     esac
 done
