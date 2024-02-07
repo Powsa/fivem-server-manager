@@ -115,141 +115,75 @@ monitor_server() {
     # Attach to the selected server's screen session
     screen -r "$screen_name"
 }
-# Function to create a new server directory and configuration file
+
 create_server() {
     read -p "Enter the desired server name: " server_name
-    server_dir="$(dirname "$(realpath "$0")")"  # Set server_dir to the script's directory
+    server_dir="$(pwd)"
     server_path="$server_dir/$server_name"
-    
+
     if [ -d "$server_path" ]; then
         echo "Error: Server directory '$server_name' already exists."
         return
     fi
 
-    mkdir -p "$server_path" && cd "$server_path"
-    git clone https://github.com/citizenfx/cfx-server-data.git . && rm -rf .git
-    echo "cfx-server-data cloned and cleaned."
+    echo "Creating directory $server_path..."
+    mkdir -p "$server_path" && cd "$server_path" || { echo "Failed to create or access directory $server_path."; exit 1; }
+
+    echo "Cloning cfx-server-data..."
+    git clone https://github.com/citizenfx/cfx-server-data.git . && rm -rf .git || { echo "Failed to clone cfx-server-data repository."; exit 1; }
 
     local base_url="https://runtime.fivem.net/artifacts/fivem/build_proot_linux/master/"
-    local build_url=$(curl -s "${base_url}" | grep -oP 'href="\K[^"]+fx.tar.xz' | head -1)
+    echo "Fetching the latest FiveM build URL..."
+    local build_url=$(curl -s "${base_url}" | grep -o 'href="[^"]\+fx.tar.xz"' | head -1 | cut -d '"' -f 2)
+    if [ -z "$build_url" ]; then
+        echo "Failed to obtain the build URL."
+        exit 1
+    fi
+
     local full_url="${base_url}${build_url}"
+    full_url="${full_url/.\//}"
 
-    echo "Downloading the latest FiveM build..."
-    if curl -o "$server_path/fx.tar.xz" "$full_url"; then
-        echo "Download successful."
-        echo "Extracting the server build..."
-        if tar -xvf "$server_path/fx.tar.xz" -C "$server_path"; then
-            echo "Extraction successful."
-            # Remove the fx.tar.xz file after successful extraction
-            rm "$server_path/fx.tar.xz"
-            echo "Removed the fx.tar.xz archive."
+    echo "The script intends to download the FiveM build from:"
+    echo "$full_url"
+    echo -n "Do you want to download and use this build (y/n)? "
 
-            # Additionally, remove the .gitignore file if it exists
-            if [ -f "$server_path/.gitignore" ]; then
-                rm "$server_path/.gitignore"
-                echo "Removed the .gitignore file."
-            fi
-
-            # Create and populate the server.cfg file
-            echo "Creating and populating server.cfg..."
-            # Create and populate the server.cfg file with a static template
-            cat > "$server_path/server.cfg" << EOF
-# Only change the IP if you're using a server with multiple network interfaces, otherwise change the port only.
-endpoint_add_tcp "0.0.0.0:30120"
-endpoint_add_udp "0.0.0.0:30120"
-
-# These resources will start by default.
-ensure mapmanager
-ensure chat
-ensure spawnmanager
-ensure sessionmanager
-ensure basic-gamemode
-ensure hardcap
-ensure rconlog
-
-# This allows players to use scripthook-based plugins such as the legacy Lambda Menu.
-# Set this to 1 to allow scripthook. Do note that this does _not_ guarantee players won't be able to use external plugins.
-sv_scriptHookAllowed 0
-
-# Uncomment this and set a password to enable RCON. Make sure to change the password - it should look like rcon_password "YOURPASSWORD"
-#rcon_password ""
-
-# A comma-separated list of tags for your server.
-# For example:
-# - sets tags "drifting, cars, racing"
-# Or:
-# - sets tags "roleplay, military, tanks"
-sets tags "default"
-
-# A valid locale identifier for your server's primary language.
-# For example "en-US", "fr-CA", "nl-NL", "de-DE", "en-GB", "pt-BR"
-sets locale "root-AQ" 
-# please DO replace root-AQ on the line ABOVE with a real language! :)
-
-# Set an optional server info and connecting banner image url.
-# Size doesn't matter, any banner sized image will be fine.
-#sets banner_detail "https://url.to/image.png"
-#sets banner_connecting "https://url.to/image.png"
-
-# Set your server's hostname. This is not usually shown anywhere in listings.
-sv_hostname "FXServer, but unconfigured"
-
-# Set your server's Project Name
-sets sv_projectName "My FXServer Project"
-
-# Set your server's Project Description
-sets sv_projectDesc "Default FXServer requiring configuration"
-
-# Set Game Build (https://docs.fivem.net/docs/server-manual/server-commands/#sv_enforcegamebuild-build)
-#sv_enforceGameBuild 2802
-
-# Nested configs!
-#exec server_internal.cfg
-
-# Loading a server icon (96x96 PNG file)
-#load_server_icon myLogo.png
-
-# convars which can be used in scripts
-set temp_convar "hey world!"
-
-# Remove the `#` from the below line if you want your server to be listed as 'private' in the server browser.
-# Do not edit it if you *do not* want your server listed as 'private'.
-# Check the following url for more detailed information about this:
-# https://docs.fivem.net/docs/server-manual/server-commands/#sv_master1-newvalue
-#sv_master1 ""
-
-# Add system admins
-add_ace group.admin command allow # allow all commands
-add_ace group.admin command.quit deny # but don't allow quit
-add_principal identifier.fivem:1 group.admin # add the admin to the group
-
-# enable OneSync (required for server-side state awareness)
-set onesync on
-
-# Server player slot limit (see https://fivem.net/server-hosting for limits)
-sv_maxclients 48
-
-# Steam Web API key, if you want to use Steam authentication (https://steamcommunity.com/dev/apikey)
-# -> replace "" with the key
-set steam_webApiKey ""
-
-# License key for your server (https://keymaster.fivem.net)
-sv_licenseKey changeme
-EOF
-            echo "server.cfg has been created and populated."
-        else
-            echo "Failed to extract the server build. Please check:" >&2
-            echo "- File permissions" >&2
-            echo "- Disk space" >&2
-            echo "- Archive integrity: Run 'xz -t $server_path/fx.tar.xz' to test" >&2
-            echo "- xz and tar availability: Ensure both are installed and support .xz files" >&2
+    read -r answer
+    if [[ "$answer" =~ ^[Yy]$ ]]; then
+        echo "Downloading the FiveM build from: $full_url"
+        download_result=$(curl -o "fx.tar.xz" "$full_url" 2>&1)
+        echo "$download_result"
+        if [ $? -ne 0 ]; then
+            echo "Download failed. Check the above output for detailed information."
             exit 1
+        else
+            echo "Download successful."
         fi
     else
-        echo "Failed to download the latest FiveM build."
+        echo "User chose not to download the build. Exiting."
+        exit 1
+    fi
+
+    echo "Extracting the server build..."
+    if tar -xvf "fx.tar.xz" -C "$server_path"; then
+        echo "Extraction successful."
+        rm "fx.tar.xz"
+        echo "Removed the fx.tar.xz archive."
+    else
+        echo "Failed to extract the server build. Check file permissions, disk space, or archive integrity."
+        exit 1
+    fi
+
+    echo "Creating and populating server.cfg from online source..."
+    if curl -o "$server_path/server.cfg" "https://syslogine.cloud/docs/games/gta_v/pixxy/config.cfg"; then
+        echo "server.cfg has been downloaded and populated."
+    else
+        echo "Failed to download server.cfg. Check the URL and internet connection."
         exit 1
     fi
 }
+
+
+
 
 # Main menu
 while true; do
