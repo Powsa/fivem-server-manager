@@ -9,27 +9,39 @@ dependencies=("git" "xz" "curl")
 # Function to install a missing dependency
 install_dependency() {
     local dependency="$1"
-    echo "Installing $dependency..."
-    if sudo apt-get update && sudo apt-get install -y "$dependency"; then
-        echo "$dependency installed successfully."
-    else
-        echo "Failed to install $dependency. Please install it manually and try again."
-        exit 1
-    fi
+    while true; do
+        echo "Attempting to install $dependency..."
+        if sudo apt-get update && sudo apt-get install -y "$dependency"; then
+            echo "$dependency installed successfully."
+            break
+        else
+            echo "Failed to install $dependency."
+            read -p "Do you want to retry (r), skip (s), or exit (e)? [r/s/e] " choice
+            case $choice in
+                r|R) echo "Retrying..." ;;
+                s|S) echo "Skipping $dependency installation."
+                     return 0 ;;
+                e|E) echo "Exiting script."
+                     exit 1 ;;
+                *) echo "Invalid choice. Please enter r, s, or e." ;;
+            esac
+        fi
+    done
 }
 
 # Loop through the dependencies and check if they are installed
 for dependency in "${dependencies[@]}"; do
     if ! command -v "$dependency" &>/dev/null; then
-        errorMsg="${errorMsg}Error: $dependency is not installed. Attempting to install it...\n"
+        errorMsg="${errorMsg}Error: $dependency is not installed.\n"
         install_dependency "$dependency"
     fi
 done
 
-# Display error messages and exit if any checks failed
+# Display error messages if any checks failed
 if [ ! -z "$errorMsg" ]; then
     printf "$errorMsg"
-    exit 1
+    # Consider removing the exit here to allow the script to attempt running even if dependencies are missing,
+    # or handle this more gracefully depending on which dependencies were skipped.
 fi
 
 # Function to create a screen session if it doesn't exist
@@ -174,18 +186,46 @@ create_server() {
 
 # Function to update the script from GitHub
 update_script() {
-    echo "Updating the script..."
-    if curl -sSf "https://raw.githubusercontent.com/Syslogine/fivem-server-manager/main/fivemanager.sh" -o "temp_updated_fivemanager.sh"; then
-        echo "Download successful."
-        if cp -f "temp_updated_fivemanager.sh" "$0"; then
-            echo "Update successful. Restarting the script..."
-            exec "$0"
+    local script_name=$(basename "$0")
+    local temp_script="temp_updated_$script_name"
+    local backup_script="${script_name}.backup"
+
+    echo "Backing up the current script to $backup_script..."
+    if cp -f "$0" "$backup_script"; then
+        echo "Backup created successfully."
+    else
+        echo "Failed to create backup. Update aborted."
+        return 1 # Exit the function if backup fails
+    fi
+
+    echo "Downloading the latest version of the script..."
+    if curl -sSf "https://raw.githubusercontent.com/Syslogine/fivem-server-manager/main/$script_name" -o "$temp_script"; then
+        echo "Download successful. Validating the script..."
+
+        # Perform a basic validation check (e.g., is it a bash script)
+        if grep -q "#!/bin/bash" "$temp_script"; then
+            echo "Validation successful."
+
+            echo "Updating the script..."
+            if mv -f "$temp_script" "$0"; then
+                echo "Update successful. Restarting the script..."
+                chmod +x "$0"
+                exec "$0" # Restart the script
+            else
+                echo "Failed to update the script. Attempting to restore from backup..."
+                if cp -f "$backup_script" "$0"; then
+                    echo "Restore successful. Please try updating again."
+                else
+                    echo "Critical error: Restore failed. Check your backup at $backup_script."
+                fi
+            fi
         else
-            echo "Failed to update the script."
+            echo "Validation failed. Update aborted. Please check the script source."
+            rm -f "$temp_script" # Cleanup the invalid script
         fi
-        rm "temp_updated_fivemanager.sh"  # Nopeeee
     else
         echo "Failed to download the updated script. Please check your internet connection or try again later."
+        rm -f "$temp_script" # Cleanup
     fi
 }
 
