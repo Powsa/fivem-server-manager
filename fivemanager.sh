@@ -240,6 +240,7 @@ while true; do
     echo "4. Monitor the server console"
     echo "5. Update this script"
     echo "6. Exit"
+    echo "7. Debug"
     echo "-----------------------------"
     read -p "Enter your choice: " choice
 
