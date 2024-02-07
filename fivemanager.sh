@@ -179,7 +179,7 @@ update_script() {
         echo "Download successful."
         if cp -f "temp_updated_fivemanager.sh" "$0"; then
             echo "Update successful. Restarting the script..."
-            exec "$0"
+            exec "$0" "$@"  # Start het bijgewerkte script opnieuw met dezelfde argumenten
         else
             echo "Failed to update the script."
         fi
@@ -188,6 +188,7 @@ update_script() {
         echo "Failed to download the updated script. Please check your internet connection or try again later."
     fi
 }
+
 
 # Function to display the main menu
 show_main_menu() {
