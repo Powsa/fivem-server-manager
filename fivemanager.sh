@@ -75,9 +75,36 @@ start_server() {
 }
 
 
-# Function to stop the FiveM server
+# Function to list and stop FiveM server sessions
 stop_server() {
-    screen -S FiveM -p 0 -X stuff "exit\n"
+    local sessions=$(screen -ls | grep 'fivem_server_' | awk '{print $1}')
+    local session_array=($sessions)
+    if [ ${#session_array[@]} -eq 0 ]; then
+        echo "No active FiveM server sessions found."
+        return 0
+    fi
+    echo "Active FiveM Server Sessions:"
+    local count=1
+    for session in "${session_array[@]}"; do
+        echo "$count. $session"
+        ((count++))
+    done
+    read -p "Enter the number of the server to stop (0 to cancel): " choice
+    if ! [[ "$choice" =~ ^[0-9]+$ ]] || [ "$choice" -lt 0 ] || [ "$choice" -gt ${#session_array[@]} ]; then
+        echo "Invalid choice. Operation cancelled."
+        return 1
+    fi
+    if [ "$choice" -eq 0 ]; then
+        echo "Operation cancelled by user."
+        return 0
+    fi
+    local selected_session_index=$((choice-1))
+    local selected_session=${session_array[$selected_session_index]}
+    if screen -S "$selected_session" -X quit; then
+        echo "Server $selected_session stopped successfully."
+    else
+        echo "Failed to stop server $selected_session."
+    fi
 }
 
 # Function to monitor the FiveM server's console output
