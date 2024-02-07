@@ -1,8 +1,5 @@
 #!/bin/bash
 
-# Verwijder eventuele tijdelijke updatebestanden die zijn achtergelaten
-rm -f temp_updated_fivemanager.sh
-
 # Initialize an error message variable
 errorMsg=""
 
@@ -176,24 +173,14 @@ create_server() {
 }
 
 # Function to update the script from GitHub
-# Functie om het script bij te werken vanuit GitHub
 update_script() {
     echo "Updating the script..."
-
-    # Haal de laatste wijzigingsdatum van het script op GitHub op
     latest_modified=$(curl -sI "https://raw.githubusercontent.com/Syslogine/fivem-server-manager/main/fivemanager.sh" | grep "Last-Modified")
     latest_modified=$(date -d"${latest_modified#*: }" "+%s")
-
-    # Haal de laatste wijzigingsdatum van het lokale script op
     local_modified=$(date -r "$0" "+%s")
-
-    # Controleer of er een update beschikbaar is
     if [ "$latest_modified" -gt "$local_modified" ]; then
         echo "New update available. Downloading..."
-
-        # Download en update het script
         if curl -sSf "https://raw.githubusercontent.com/Syslogine/fivem-server-manager/main/fivemanager.sh" -o "updated_fivemanager.sh"; then
-            # Vervang het huidige scriptbestand door het bijgewerkte script
             if mv -f "updated_fivemanager.sh" "$0"; then
                 echo "Update successful. Restarting the script..."
                 exec "$0" "$@"
