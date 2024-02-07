@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Verwijder eventuele tijdelijke updatebestanden die zijn achtergelaten
+rm -f temp_updated_fivemanager.sh
+
 # Initialize an error message variable
 errorMsg=""
 
