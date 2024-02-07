@@ -1,5 +1,8 @@
 #!/bin/bash
 
+
+####
+
 # Initialize an error message variable
 errorMsg=""
 
@@ -172,6 +175,25 @@ create_server() {
     fi
 }
 
+# Function to update the script from GitHub
+update_script() {
+    echo "Updating the script..."
+
+    # Download het script van GitHub en sla het op als een tijdelijk bestand
+    if curl -sSf "https://raw.githubusercontent.com/Syslogine/fivem-server-manager/main/fivemanager.sh" -o "temp_updated_fivemanager.sh"; then
+        echo "Download successful."
+
+        # Vervang het huidige script door het bijgewerkte script
+        if mv -f "temp_updated_fivemanager.sh" "$0"; then
+            echo "Update successful. Restarting the script..."
+            exec "$0"
+        else
+            echo "Failed to replace the script with the updated version."
+        fi
+    else
+        echo "Failed to download the updated script. Please check your internet connection or try again later."
+    fi
+}
 
 # Main menu
 while true; do
@@ -182,6 +204,7 @@ while true; do
     echo "2. Start the server"
     echo "3. Stop the server"
     echo "4. Monitor the server console"
+    echo "5. Update this script"
     echo "6. Exit"
     read -p "Enter your choice: " choice
 
@@ -190,7 +213,11 @@ while true; do
         2) start_server ;;
         3) stop_server ;;
         4) monitor_server ;;
+        5) update_script ;;
         6 | "exit" | "stop") exit 0 ;;
         *) echo "Invalid choice." ;;
     esac
 done
+
+
+#####
