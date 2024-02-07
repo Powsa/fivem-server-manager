@@ -1,8 +1,5 @@
 #!/bin/bash
 
-
-####
-
 # Initialize an error message variable
 errorMsg=""
 
@@ -219,5 +216,3 @@ while true; do
     esac
 done
 
-
-#####
