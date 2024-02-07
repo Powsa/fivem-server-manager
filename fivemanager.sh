@@ -189,9 +189,8 @@ update_script() {
     fi
 }
 
-
-# Main menu
-while true; do
+# Function to display the main menu
+show_main_menu() {
     clear
     echo "FiveM Server Management Script"
     echo "-----------------------------"
@@ -201,6 +200,8 @@ while true; do
     echo "4. Monitor the server console"
     echo "5. Update this script"
     echo "6. Exit"
+    echo "7. Debug"
+    echo "-----------------------------"
     read -p "Enter your choice: " choice
 
     case $choice in
@@ -210,7 +211,22 @@ while true; do
         4) monitor_server ;;
         5) update_script ;;
         6 | "exit" | "stop") exit 0 ;;
-        *) echo "Invalid choice." ;;
+        *) echo "Invalid choice." && sleep 2 ;;
     esac
+}
+
+# Function to display additional information
+show_additional_info() {
+    echo "Here you can display additional information such as installation instructions or server updates."
+    read -p "Press Enter to continue..."
+}
+
+# Main loop
+while true; do
+    # Display the main menu
+    show_main_menu
+
+    # Display additional information
+    show_additional_info
 done
 
