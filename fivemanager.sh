@@ -189,20 +189,33 @@ update_script() {
     local script_name=$(basename "$0")
     local temp_script="temp_updated_$script_name"
     local backup_script="${script_name}.backup"
+    local script_url="https://raw.githubusercontent.com/Syslogine/fivem-server-manager/main/$script_name"
 
-    echo "Backing up the current script to $backup_script..."
-    if cp -f "$0" "$backup_script"; then
-        echo "Backup created successfully."
-    else
-        echo "Failed to create backup. Update aborted."
-        return 1 # Exit the function if backup fails
-    fi
+    echo "Checking for updates..."
 
-    echo "Downloading the latest version of the script..."
-    if curl -sSf "https://raw.githubusercontent.com/Syslogine/fivem-server-manager/main/$script_name" -o "$temp_script"; then
-        echo "Download successful. Validating the script..."
+    # Download the latest version of the script to a temporary file
+    if curl -sSf "$script_url" -o "$temp_script"; then
+        # Compare the downloaded script with the current one
+        if cmp -s "$temp_script" "$0"; then
+            echo "No new updates available. You are using the latest version."
+            rm -f "$temp_script" # Cleanup
+            return 0 # Exit the function as no update is needed
+        else
+            echo "Update available. Proceeding with the update..."
+        fi
 
-        # Perform a basic validation check (e.g., is it a bash script)
+        # Backup the current script
+        echo "Backing up the current script to $backup_script..."
+        if cp -f "$0" "$backup_script"; then
+            echo "Backup created successfully."
+        else
+            echo "Failed to create backup. Update aborted."
+            rm -f "$temp_script" # Cleanup
+            return 1
+        fi
+
+        # Validation and update logic as before
+        echo "Validating the downloaded script..."
         if grep -q "#!/bin/bash" "$temp_script"; then
             echo "Validation successful."
 
@@ -225,7 +238,6 @@ update_script() {
         fi
     else
         echo "Failed to download the updated script. Please check your internet connection or try again later."
-        rm -f "$temp_script" # Cleanup
     fi
 }
 
