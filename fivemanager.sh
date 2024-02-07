@@ -175,22 +175,20 @@ create_server() {
 # Function to update the script from GitHub
 update_script() {
     echo "Updating the script..."
-
-    # Download het script van GitHub en sla het op als een tijdelijk bestand
     if curl -sSf "https://raw.githubusercontent.com/Syslogine/fivem-server-manager/main/fivemanager.sh" -o "temp_updated_fivemanager.sh"; then
         echo "Download successful."
-
-        # Vervang het huidige script door het bijgewerkte script
-        if mv -f "temp_updated_fivemanager.sh" "$0"; then
+        if cp -f "temp_updated_fivemanager.sh" "$0"; then
             echo "Update successful. Restarting the script..."
             exec "$0"
         else
-            echo "Failed to replace the script with the updated version."
+            echo "Failed to update the script."
         fi
+        rm "temp_updated_fivemanager.sh"
     else
         echo "Failed to download the updated script. Please check your internet connection or try again later."
     fi
 }
+
 
 # Main menu
 while true; do
