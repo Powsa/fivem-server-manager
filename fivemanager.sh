@@ -54,58 +54,85 @@ create_screen_session() {
 # Function to start the FiveM server
 start_server() {
     script_dir="$(dirname "$(realpath "$0")")"
-    available_servers=("$script_dir"/*)
+    
+    # Initialize an array to hold directories that contain a run.sh script
+    available_servers=()
+    for dir in "$script_dir"/*/; do
+        if [ -f "${dir}run.sh" ]; then
+            available_servers+=("$dir")
+        fi
+    done
+    
     if [ ${#available_servers[@]} -eq 0 ]; then
-        echo "No servers found in the server directory. Cannot start any servers."
+        echo "No servers found in the server directory with a run.sh script. Cannot start any servers."
         return 1
     fi
+    
     echo "Available servers:"
     for ((i=0; i<${#available_servers[@]}; i++)); do
         server_name=$(basename "${available_servers[$i]}")
         echo "$((i+1)). $server_name"
     done
+    
     read -p "Enter the number of the server you want to start: " server_choice
     if ! [[ "$server_choice" =~ ^[0-9]+$ ]] || [ "$server_choice" -lt 1 ] || [ "$server_choice" -gt ${#available_servers[@]} ]; then
         echo "Invalid choice. Please enter a valid number."
         return 1
     fi
+    
     selected_server="${available_servers[$((server_choice-1))]}"
-    screen -dmS "fivem_server_$(basename "$selected_server")" bash -c "cd '$selected_server' && ./run.sh"
-    echo "Started the server: $(basename "$selected_server")"
+    screen_name="fivem_server_$(basename "${selected_server%/}")" # Remove trailing slash for screen name
+    screen -dmS "$screen_name" bash -c "cd '$selected_server' && ./run.sh"
+    echo "Started the server: $(basename "${selected_server%/}")"
 }
+
 
 
 # Function to list and stop FiveM server sessions
 stop_server() {
+    # List screen sessions matching the naming pattern used for starting servers
     local sessions=$(screen -ls | grep 'fivem_server_' | awk '{print $1}')
     local session_array=($sessions)
+    
     if [ ${#session_array[@]} -eq 0 ]; then
         echo "No active FiveM server sessions found."
         return 0
     fi
+    
     echo "Active FiveM Server Sessions:"
     local count=1
     for session in "${session_array[@]}"; do
-        echo "$count. $session"
+        # Extract and format the server name from the session name for display
+        local server_name=$(echo $session | sed 's/fivem_server_//')
+        echo "$count. $server_name"
         ((count++))
     done
+    
     read -p "Enter the number of the server to stop (0 to cancel): " choice
+    
+    # Validate the user's choice
     if ! [[ "$choice" =~ ^[0-9]+$ ]] || [ "$choice" -lt 0 ] || [ "$choice" -gt ${#session_array[@]} ]; then
         echo "Invalid choice. Operation cancelled."
         return 1
     fi
+    
     if [ "$choice" -eq 0 ]; then
         echo "Operation cancelled by user."
         return 0
     fi
+    
     local selected_session_index=$((choice-1))
     local selected_session=${session_array[$selected_session_index]}
+    
     if screen -S "$selected_session" -X quit; then
-        echo "Server $selected_session stopped successfully."
+        # Inform the user which server was stopped using the extracted server name
+        local stopped_server_name=$(echo $selected_session | sed 's/fivem_server_//')
+        echo "Server $stopped_server_name stopped successfully."
     else
         echo "Failed to stop server $selected_session."
     fi
 }
+
 
 # Function to monitor the FiveM server's console output
 monitor_server() {
@@ -253,10 +280,58 @@ handle_invalid_choice() {
     echo "Invalid choice: $1. Please try again."
 }
 
-# Debug function (Example)
+# Debug function
 debug_server() {
-    echo "Debugging servers is not yet implemented."
+    echo "Select a server to debug:"
+
+    # Reuse the logic from the start_server function to list available servers
+    script_dir="$(dirname "$(realpath "$0")")"
+    available_servers=()
+    for dir in "$script_dir"/*/; do
+        if [ -f "${dir}run.sh" ]; then
+            available_servers+=("$dir")
+        fi
+    done
+    
+    if [ ${#available_servers[@]} -eq 0 ]; then
+        echo "No servers found in the server directory with a run.sh script. Cannot debug any servers."
+        return 1
+    fi
+    
+    for ((i=0; i<${#available_servers[@]}; i++)); do
+        server_name=$(basename "${available_servers[$i]}")
+        echo "$((i+1)). $server_name"
+    done
+    
+    read -p "Enter the number of the server you want to debug: " server_choice
+    
+    if ! [[ "$server_choice" =~ ^[0-9]+$ ]] || [ "$server_choice" -lt 1 ] || [ "$server_choice" -gt ${#available_servers[@]} ]; then
+        echo "Invalid choice. Please enter a valid number."
+        return 1
+    fi
+
+    selected_server="${available_servers[$((server_choice-1))]}"
+    server_name=$(basename "${selected_server}")
+    
+    # Example debug actions
+    echo "Debugging server: $server_name"
+    
+    # Check if the server is running
+    if screen -list | grep -q "fivem_server_$server_name"; then
+        echo "Server is currently running."
+    else
+        echo "Server is not running."
+    fi
+
+    # Check for the existence of a log file and display its last 10 lines
+    if [ -f "${selected_server}server.log" ]; then
+        echo "Last 10 lines of the server log:"
+        tail -n 10 "${selected_server}server.log"
+    else
+        echo "Server log file not found."
+    fi
 }
+
 
 # Main menu loop
 while true; do
