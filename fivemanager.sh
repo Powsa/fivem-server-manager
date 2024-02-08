@@ -228,16 +228,24 @@ update_script() {
 
 # Function to display the main menu
 display_menu() {
-    echo "FiveM Server Management Script"
-    echo "-----------------------------"
-    echo "1. Create a new server"
-    echo "2. Start the server"
-    echo "3. Stop the server"
-    echo "4. Monitor the server console"
-    echo "5. Update this script"
-    echo "6. Exit"
-    echo "7. Debug Server"
-    echo "-----------------------------"
+    # Define color codes
+    RED='\033[0;31m'
+    GREEN='\033[0;32m'
+    YELLOW='\033[1;33m'
+    BLUE='\033[0;34m'
+    NC='\033[0m' # No Color
+
+    # Use colors in the echo statements
+    echo -e "${BLUE}FiveM Server Management Script${NC}"
+    echo -e "${YELLOW}-----------------------------${NC}"
+    echo -e "${GREEN}1. Create a new server${NC}"
+    echo -e "${GREEN}2. Start the server${NC}"
+    echo -e "${GREEN}3. Stop the server${NC}"
+    echo -e "${GREEN}4. Monitor the server console${NC}"
+    echo -e "${GREEN}5. Update this script${NC}"
+    echo -e "${GREEN}6. Exit${NC}"
+    echo -e "${GREEN}7. Debug Server${NC}"
+    echo -e "${YELLOW}-----------------------------${NC}"
 }
 
 # Function for handling invalid choices
@@ -262,7 +270,7 @@ while true; do
         3) stop_server ;;
         4) monitor_server ;;
         5) update_script ;;
-        6) echo "Exiting the script. Goodbye!"; exit 0 ;;
+        6 | exit | stop | quit) echo "Exiting the script. Goodbye!"; exit 0 ;;
         7) debug_server ;;
         *) handle_invalid_choice "$choice" ;;
     esac
