@@ -4,7 +4,7 @@
 errorMsg=""
 
 # Define the required dependencies
-dependencies=("git" "xz" "curl")
+dependencies=("git" "xz" "curl" "unzip")
 
 # Function to install a missing dependency
 install_dependency() {
@@ -77,10 +77,26 @@ start_server() {
     selected_server="${available_servers[$((server_choice-1))]}"
     server_name=$(basename "${selected_server}")
     screen_name="$server_name"
-    screen -dmS "$screen_name" bash -c "cd '$selected_server' && ./run.sh"
-    echo "Started the server: $server_name"
-    echo "$(date '+%Y-%m-%d %H:%M:%S') - Server '$server_name' started." >> "${selected_server}server.log"
-    echo "To view the unique 4 digit code, use '4. Monitor the server console'."
+
+    echo "Select the start method for the server:"
+    echo "1. Standard start (run.sh)"
+    echo "2. Start with server.cfg (run.sh +exec server.cfg)"
+    read -p "Option [1-2]: " start_option
+
+    case "$start_option" in
+        2) start_cmd="./run.sh +exec server.cfg"
+            if grep -qE '^\s*sv_licenseKey\s+changeme\s*$' "${selected_server}/server.cfg"; then
+                echo "$(date '+%Y-%m-%d %H:%M:%S') - Warning: sv_licenseKey not set properly in server.cfg." >> "${selected_server}server.log"
+            fi
+           ;;
+        *) start_cmd="./run.sh"
+           ;;
+    esac
+
+    echo "Starting the server: $server_name"
+    screen -dmS "$screen_name" bash -c "cd '$selected_server' && $start_cmd"
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - Server '$server_name' started with command: '$start_cmd'." >> "${selected_server}server.log"
+    echo "Server start event logged in $server_name/server.log."
 }
 
 # Function to list and stop FiveM server sessions
@@ -337,6 +353,79 @@ debug_server() {
     fi
 }
 
+update_txAdmin() {
+    echo "Fetching the latest txAdmin release information..."
+    
+    # Initialize the available_servers array
+    available_servers=()
+    script_dir="$(dirname "$(realpath "$0")")"
+    # Assuming each server directory is directly under the script directory
+    for server_dir in "$script_dir"/*; do
+        if [ -d "$server_dir" ] && [ -f "$server_dir/run.sh" ]; then
+            available_servers+=("$server_dir")
+        fi
+    done
+
+    if [ ${#available_servers[@]} -eq 0 ]; then
+        echo "No servers found. Please ensure server directories are present and contain a run.sh script."
+        return 1
+    fi
+
+    echo "Available servers for txAdmin update:"
+    for i in "${!available_servers[@]}"; do
+        echo "$((i+1)). $(basename "${available_servers[$i]}")"
+    done
+
+    read -p "Enter the number of the server you want to update txAdmin for: " server_choice
+    # Validation of the user's choice
+    if ! [[ "$server_choice" =~ ^[0-9]+$ ]] || [ "$server_choice" -lt 1 ] || [ "$server_choice" -gt ${#available_servers[@]} ]; then
+        echo "Invalid choice. Please enter a valid number."
+        return 1
+    fi
+
+    selected_server="${available_servers[$((server_choice-1))]}"
+    txAdmin_dir="${selected_server}/alpine/opt/cfx-server/citizen/system_resources/monitor"
+
+    # Adjust this path as necessary to accurately point to where txAdmin's monitor should be updated
+
+    release_info=$(curl -s https://api.github.com/repos/tabarra/txAdmin/releases/latest)
+
+    download_url=$(echo "$release_info" | jq -r '.assets[] | select(.name == "monitor.zip") | .browser_download_url')
+
+    if [ -z "$download_url" ]; then
+        echo "Failed to find monitor.zip in the latest release."
+        return 1
+    fi
+
+    echo "Downloading monitor.zip from $download_url..."
+    curl -L "$download_url" -o monitor.zip
+
+    # Ensure the unzip command is available
+    if ! command -v unzip &> /dev/null; then
+        echo "The 'unzip' utility is required but not installed. Please install it using your package manager."
+        return 1
+    fi
+
+    # Create a temporary directory for extraction
+    temp_dir=$(mktemp -d)
+    echo "Extracting monitor.zip to temporary directory..."
+    unzip monitor.zip -d "$temp_dir"
+    rm monitor.zip
+
+    echo "Updating txAdmin monitor in $txAdmin_dir..."
+    # Make sure to properly handle the directory paths
+    rm -rf "$txAdmin_dir/*"
+    mkdir "$txAdmin_dir/"
+    mv "$temp_dir"/* "$txAdmin_dir/"
+
+    # Cleanup
+    rm -rf "$temp_dir"
+
+    echo "txAdmin update process complete."
+}
+
+
+
 # Function for handling invalid choices
 handle_invalid_choice() {
     echo "Invalid choice: $1. Please try again."
@@ -367,8 +456,9 @@ display_menu() {
     echo -e "${GREEN}${BOLD}3.${NC} ${UNDERLINE}Stop the server${NC}"
     echo -e "${GREEN}${BOLD}4.${NC} ${UNDERLINE}Monitor the server console${NC}"
     echo -e "${GREEN}${BOLD}5.${NC} ${UNDERLINE}Update this script${NC}"
-    echo -e "${GREEN}${BOLD}6.${NC} ${UNDERLINE}Exit${NC}"
+    echo -e "${GREEN}${BOLD}6.${NC} ${UNDERLINE}Update txAdmin${NC}"
     echo -e "${GREEN}${BOLD}7.${NC} ${UNDERLINE}Debug Server${NC}"
+    echo -e "${GREEN}${BOLD}0.${NC} ${UNDERLINE}Exit${NC}"
 
     # Bottom border
     echo -e "${YELLOW}========================================${NC}"
@@ -385,8 +475,9 @@ while true; do
         3) stop_server ;;
         4) monitor_server ;;
         5) update_script ;;
-        6 | exit | stop | quit) echo -e "${RED}Exiting the script. Goodbye!${NC}"; exit 0 ;;
+        6) update_txAdmin ;; 
         7) debug_server ;;
+        0 | exit | stop | quit) echo -e "${RED}Exiting the script. Goodbye!${NC}"; exit 0 ;;
         *) echo -e "${RED}Invalid choice. Please try again.${NC}" ;;
     esac
     # Wait for user acknowledgment before showing the menu again
