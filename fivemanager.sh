@@ -54,108 +54,128 @@ create_screen_session() {
 # Function to start the FiveM server
 start_server() {
     script_dir="$(dirname "$(realpath "$0")")"
-    
-    # Initialize an array to hold directories that contain a run.sh script
     available_servers=()
     for dir in "$script_dir"/*/; do
         if [ -f "${dir}run.sh" ]; then
             available_servers+=("$dir")
         fi
     done
-    
     if [ ${#available_servers[@]} -eq 0 ]; then
         echo "No servers found in the server directory with a run.sh script. Cannot start any servers."
         return 1
     fi
-    
     echo "Available servers:"
     for ((i=0; i<${#available_servers[@]}; i++)); do
         server_name=$(basename "${available_servers[$i]}")
         echo "$((i+1)). $server_name"
     done
-    
     read -p "Enter the number of the server you want to start: " server_choice
     if ! [[ "$server_choice" =~ ^[0-9]+$ ]] || [ "$server_choice" -lt 1 ] || [ "$server_choice" -gt ${#available_servers[@]} ]; then
         echo "Invalid choice. Please enter a valid number."
         return 1
     fi
-    
     selected_server="${available_servers[$((server_choice-1))]}"
-    screen_name="fivem_server_$(basename "${selected_server%/}")" # Remove trailing slash for screen name
+    server_name=$(basename "${selected_server}")
+    screen_name="$server_name"
     screen -dmS "$screen_name" bash -c "cd '$selected_server' && ./run.sh"
-    echo "Started the server: $(basename "${selected_server%/}")"
+    echo "Started the server: $server_name"
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - Server '$server_name' started." >> "${selected_server}server.log"
+    echo "To view the unique 4 digit code, use '4. Monitor the server console'."
 }
 
-
-
+# Function to list and stop FiveM server sessions
 # Function to list and stop FiveM server sessions
 stop_server() {
-    # List screen sessions matching the naming pattern used for starting servers
-    local sessions=$(screen -ls | grep 'fivem_server_' | awk '{print $1}')
+    local sessions=$(screen -ls | awk '/\.testserver\t/ {print $1}' | sed 's/.*\.//')
     local session_array=($sessions)
-    
+
     if [ ${#session_array[@]} -eq 0 ]; then
         echo "No active FiveM server sessions found."
         return 0
     fi
-    
+
     echo "Active FiveM Server Sessions:"
-    local count=1
-    for session in "${session_array[@]}"; do
-        # Extract and format the server name from the session name for display
-        local server_name=$(echo $session | sed 's/fivem_server_//')
-        echo "$count. $server_name"
-        ((count++))
+    for i in "${!session_array[@]}"; do
+        echo "$((i+1)). ${session_array[$i]}"
     done
-    
+
     read -p "Enter the number of the server to stop (0 to cancel): " choice
-    
-    # Validate the user's choice
-    if ! [[ "$choice" =~ ^[0-9]+$ ]] || [ "$choice" -lt 0 ] || [ "$choice" -gt ${#session_array[@]} ]; then
+    if ! [[ "$choice" =~ ^[0-9]+$ ]] || [ "$choice" -lt 1 ] || [ "$choice" -gt ${#session_array[@]} ]; then
         echo "Invalid choice. Operation cancelled."
         return 1
     fi
-    
+
     if [ "$choice" -eq 0 ]; then
         echo "Operation cancelled by user."
         return 0
     fi
-    
-    local selected_session_index=$((choice-1))
-    local selected_session=${session_array[$selected_session_index]}
-    
-    if screen -S "$selected_session" -X quit; then
-        # Inform the user which server was stopped using the extracted server name
-        local stopped_server_name=$(echo $selected_session | sed 's/fivem_server_//')
-        echo "Server $stopped_server_name stopped successfully."
+
+    local selected_server_name=${session_array[$((choice-1))]}
+    if screen -S "$selected_server_name" -X quit; then
+        echo "Server $selected_server_name stopped successfully."
+        local script_dir="$(dirname "$(realpath "$0")")"
+        local log_path="$script_dir/$selected_server_name/server.log"
+        if [[ -f "$log_path" ]]; then
+            echo "$(date '+%Y-%m-%d %H:%M:%S') - Server '$selected_server_name' stopped." >> "$log_path"
+            echo "Server stop event logged in $selected_server_name/server.log"
+        else
+            echo "Failed to log stop event: $log_path does not exist."
+        fi
     else
-        echo "Failed to stop server $selected_session."
+        echo "Failed to stop server $selected_server_name."
     fi
 }
+
+
 
 
 # Function to monitor the FiveM server's console output
 monitor_server() {
     script_dir="$(dirname "$(realpath "$0")")"
-    available_servers=("$script_dir"/*)
+    available_servers=()
+    for dir in "$script_dir"/*/; do
+        # Check if the directory contains a run.sh script to qualify as a server
+        if [ -f "${dir}run.sh" ]; then
+            available_servers+=("$dir")
+        fi
+    done
+
     if [ ${#available_servers[@]} -eq 0 ]; then
         echo "No servers found in the server directory. Cannot monitor any servers."
         return 1
     fi
+
     echo "Available servers:"
     for ((i=0; i<${#available_servers[@]}; i++)); do
         server_name=$(basename "${available_servers[$i]}")
-        echo "$((i+1)). $server_name"
+        # Ensure only valid server directories are listed
+        if [[ $server_name != "fivemanager.sh" ]]; then
+            echo "$((i+1)). $server_name"
+        fi
     done
+
     read -p "Enter the number of the server you want to monitor: " server_choice
     if ! [[ "$server_choice" =~ ^[0-9]+$ ]] || [ "$server_choice" -lt 1 ] || [ "$server_choice" -gt ${#available_servers[@]} ]; then
         echo "Invalid choice. Please enter a valid number."
         return 1
     fi
+
     selected_server="${available_servers[$((server_choice-1))]}"
-    screen_name="fivem_server_$(basename "$selected_server")"
+    server_name=$(basename "${selected_server%/}")
+    screen_name="$server_name"  # Adjusted to reflect the simplified naming convention
+    
+    # Before attaching to the screen session
+    echo "Now monitoring $server_name. To detach and return to the menu, press 'Ctrl+A' followed by 'D'."
+    read -p "Press any key to continue..." -n 1 -s
+
+    # Attach to the screen session
     screen -r "$screen_name"
+
+    # After the user detaches and control returns to the script
+    echo "You have successfully detached from the $server_name session."
 }
+
+
 
 create_server() {
     read -p "Enter the desired server name: " server_name
@@ -165,6 +185,7 @@ create_server() {
         echo "Error: Server directory '$server_name' already exists."
         return
     fi
+
     echo "Creating directory $server_path..."
     mkdir -p "$server_path" && cd "$server_path" || { echo "Failed to create or access directory $server_path."; exit 1; }
     echo "Cloning cfx-server-data..."
@@ -197,6 +218,7 @@ create_server() {
         exit 1
     fi
     echo "Creating and populating server.cfg from online source..."
+    touch "$server_path/server.log" || { echo "Failed to create server.log file."; exit 1; }
     if curl -o "$server_path/server.cfg" "https://syslogine.cloud/docs/games/gta_v/pixxy/config.cfg"; then
         echo "server.cfg has been downloaded and populated."
     else
@@ -253,33 +275,6 @@ update_script() {
     fi
 }
 
-# Function to display the main menu
-display_menu() {
-    # Define color codes
-    RED='\033[0;31m'
-    GREEN='\033[0;32m'
-    YELLOW='\033[1;33m'
-    BLUE='\033[0;34m'
-    NC='\033[0m' # No Color
-
-    # Use colors in the echo statements
-    echo -e "${BLUE}FiveM Server Management Script${NC}"
-    echo -e "${YELLOW}-----------------------------${NC}"
-    echo -e "${GREEN}1. Create a new server${NC}"
-    echo -e "${GREEN}2. Start the server${NC}"
-    echo -e "${GREEN}3. Stop the server${NC}"
-    echo -e "${GREEN}4. Monitor the server console${NC}"
-    echo -e "${GREEN}5. Update this script${NC}"
-    echo -e "${GREEN}6. Exit${NC}"
-    echo -e "${GREEN}7. Debug Server${NC}"
-    echo -e "${YELLOW}-----------------------------${NC}"
-}
-
-# Function for handling invalid choices
-handle_invalid_choice() {
-    echo "Invalid choice: $1. Please try again."
-}
-
 # Debug function
 debug_server() {
     echo "Select a server to debug:"
@@ -323,21 +318,66 @@ debug_server() {
         echo "Server is not running."
     fi
 
+    # Path to the log file
+    local log_file="${selected_server}server.log"
+
     # Check for the existence of a log file and display its last 10 lines
-    if [ -f "${selected_server}server.log" ]; then
+    if [ -f "$log_file" ]; then
         echo "Last 10 lines of the server log:"
-        tail -n 10 "${selected_server}server.log"
+        tail -n 10 "$log_file"
     else
         echo "Server log file not found."
+        read -p "Would you like to create one? (y/N): " create_choice
+        if [[ $create_choice =~ ^[Yy]$ ]]; then
+            # Attempt to create an empty log file
+            touch "$log_file" && echo "Log file created at $log_file" || echo "Failed to create log file."
+        else
+            echo "Not creating a log file."
+        fi
     fi
 }
 
+# Function for handling invalid choices
+handle_invalid_choice() {
+    echo "Invalid choice: $1. Please try again."
+}
+
+# Function to display the main menu
+display_menu() {
+    # Define color codes
+    RED='\033[0;31m'
+    GREEN='\033[0;32m'
+    YELLOW='\033[1;33m'
+    BLUE='\033[0;34m'
+    NC='\033[0m' # No Color
+    BOLD='\033[1m'
+    UNDERLINE='\033[4m'
+
+    # Clear the screen
+    clear
+
+    # Top border
+    echo -e "${YELLOW}========================================${NC}"
+    echo -e "${BLUE}${BOLD}    FiveM Server Management Script    ${NC}"
+    echo -e "${YELLOW}========================================${NC}"
+
+    # Menu items
+    echo -e "${GREEN}${BOLD}1.${NC} ${UNDERLINE}Create a new server${NC}"
+    echo -e "${GREEN}${BOLD}2.${NC} ${UNDERLINE}Start the server${NC}"
+    echo -e "${GREEN}${BOLD}3.${NC} ${UNDERLINE}Stop the server${NC}"
+    echo -e "${GREEN}${BOLD}4.${NC} ${UNDERLINE}Monitor the server console${NC}"
+    echo -e "${GREEN}${BOLD}5.${NC} ${UNDERLINE}Update this script${NC}"
+    echo -e "${GREEN}${BOLD}6.${NC} ${UNDERLINE}Exit${NC}"
+    echo -e "${GREEN}${BOLD}7.${NC} ${UNDERLINE}Debug Server${NC}"
+
+    # Bottom border
+    echo -e "${YELLOW}========================================${NC}"
+}
 
 # Main menu loop
 while true; do
-    clear
     display_menu
-    read -p "Enter your choice: " choice
+    read -p "$(echo -e ${BLUE}Enter your choice:${NC} )" choice
 
     case $choice in
         1) create_server ;;
@@ -345,10 +385,10 @@ while true; do
         3) stop_server ;;
         4) monitor_server ;;
         5) update_script ;;
-        6 | exit | stop | quit) echo "Exiting the script. Goodbye!"; exit 0 ;;
+        6 | exit | stop | quit) echo -e "${RED}Exiting the script. Goodbye!${NC}"; exit 0 ;;
         7) debug_server ;;
-        *) handle_invalid_choice "$choice" ;;
+        *) echo -e "${RED}Invalid choice. Please try again.${NC}" ;;
     esac
-    # Wait for user acknowledgment before clearing the screen and showing the menu again
-    read -p "Press enter to continue..."
+    # Wait for user acknowledgment before showing the menu again
+    read -p "$(echo -e ${YELLOW}Press enter to continue...${NC})"
 done
