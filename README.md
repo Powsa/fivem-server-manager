@@ -27,7 +27,7 @@ To make the most of the advanced features provided by the script, follow these s
 
 To use this script effectively, ensure that your system meets the following requirements:
 
-- Linux Operating System (Ubuntu, CentOS, Debian, etc.)
+- Linux Operating System (Ubuntu, Debian, etc.)
 - Bash Shell
 - Necessary dependencies like `git`, `curl`, `unzip`, etc.
 
