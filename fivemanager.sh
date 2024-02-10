@@ -473,6 +473,154 @@ handle_invalid_choice() {
     echo "Invalid choice: $1. Please try again."
 }
 
+manage_security() {
+    echo -e "${YELLOW}Security Enhancements Menu:${NC}"
+    echo "1. Configure Firewall"
+    echo "2. Harden SSH"
+    echo "3. Perform System Updates"
+    echo "4. Setup Fail2Ban"
+    echo "5. Perform Security Audit"
+    read -p "Select an option: " security_action
+
+    case $security_action in
+        1) configure_firewall ;;
+        2) harden_ssh ;;
+        3) perform_updates ;;
+        4) setup_fail2ban ;;
+        5) perform_security_audit ;;
+        *) echo -e "${RED}Invalid option selected. Please try again.${NC}" ;;
+    esac
+}
+
+configure_firewall() {
+    echo -e "${YELLOW}Initiating firewall configuration for enhanced security...${NC}"
+    available_servers=()
+    script_dir="$(dirname "$(realpath "$0")")"
+    echo "Searching for servers in ${script_dir}..."
+    for server_dir in "$script_dir"/*; do
+        if [ -d "$server_dir" ] && [ -f "$server_dir/run.sh" ]; then
+            server_name=$(basename "$server_dir")
+            available_servers+=("$server_name")
+        fi
+    done
+    if [ ${#available_servers[@]} -eq 0 ]; then
+        echo -e "${RED}No servers found. Please ensure server directories are present and contain a run.sh script.${NC}"
+        return 1
+    fi
+    echo "Available servers for firewall configuration:"
+    for i in "${!available_servers[@]}"; do
+        echo "$((i+1)). ${available_servers[$i]}"
+    done
+    read -p "Select the server to configure firewall for (enter number): " server_choice
+    let server_choice-=1
+    if [[ $server_choice -lt 0 || $server_choice -ge ${#available_servers[@]} ]]; then
+        echo -e "${RED}Invalid selection.${NC}"
+        return 1
+    fi
+    server_cfg="${script_dir}/${available_servers[$server_choice]}/server.cfg"
+    if [ -f "$server_cfg" ]; then
+        tcp_port=$(grep "endpoint_add_tcp" "$server_cfg" | cut -d '"' -f 2 | cut -d ':' -f 2)
+        udp_port=$(grep "endpoint_add_udp" "$server_cfg" | cut -d '"' -f 2 | cut -d ':' -f 2)
+        if [[ -z $tcp_port || -z $udp_port ]]; then
+            echo -e "${RED}Could not extract TCP or UDP port from server.cfg.${NC}"
+            return 1
+        fi
+        echo "Configuring UFW with essential ports and those extracted from the server configuration..."
+        sudo ufw allow 22/tcp
+        sudo ufw allow 80/tcp
+        sudo ufw allow 443/tcp
+        sudo ufw allow $tcp_port/tcp
+        sudo ufw allow $udp_port/udp
+        read -p "Do you want to allow external access to txAdmin on port 40120? (y/n): " allow_txadmin
+        if [[ $allow_txadmin =~ ^[Yy]$ ]]; then
+            sudo ufw allow 40120/tcp
+            echo -e "${GREEN}txAdmin port 40120 opened successfully.${NC}"
+        fi
+        if sudo ufw status | grep -q "inactive"; then
+            sudo ufw --force enable
+            echo -e "${GREEN}Firewall enabled and configured successfully for ${available_servers[$server_choice]}.${NC}"
+        else
+            sudo ufw reload
+            echo -e "${GREEN}Firewall rules reloaded and applied successfully for ${available_servers[$server_choice]}.${NC}"
+        fi
+        echo -e "${GREEN}Firewall rules configured successfully for ${available_servers[$server_choice]}.${NC}"
+    else
+        echo -e "${RED}server.cfg not found for selected server.${NC}"
+        return 1
+    fi
+}
+
+harden_ssh() {
+    echo -e "${YELLOW}Hardening SSH configuration...${NC}"
+    user_home=$(eval echo ~$(whoami))
+    if [ -f "${user_home}/.ssh/authorized_keys" ]; then
+        echo -e "${GREEN}SSH keys setup detected for $(whoami). Proceeding with disabling password authentication.${NC}"
+        ssh_config_file="/etc/ssh/sshd_config"
+        sudo cp $ssh_config_file "${ssh_config_file}.bak"
+        sudo sed -i 's/#PermitRootLogin yes/PermitRootLogin no/' $ssh_config_file
+        read -p "Disable password authentication? This requires SSH keys for login (y/n): " disable_pass_auth
+        if [[ $disable_pass_auth == [Yy] ]]; then
+            sudo sed -i 's/#PasswordAuthentication yes/PasswordAuthentication no/' $ssh_config_file
+            sudo sed -i 's/PasswordAuthentication yes/PasswordAuthentication no/' $ssh_config_file
+            echo -e "${GREEN}Password authentication disabled.${NC}"
+        else
+            echo -e "${YELLOW}Keeping password authentication enabled.${NC}"
+        fi
+        sudo systemctl reload sshd
+    else
+        echo -e "${RED}No SSH keys setup detected for $(whoami). Please configure SSH keys before disabling password authentication.${NC}"
+    fi
+}
+
+perform_updates() {
+    echo -e "${YELLOW}Updating server software...${NC}"
+    if sudo apt-get update; then
+        echo -e "${GREEN}Package lists updated successfully.${NC}"
+    else
+        echo -e "${RED}Failed to update package lists. Check your network connection and repository configuration.${NC}"
+        return 1
+    fi
+    if sudo apt-get upgrade -y; then
+        echo -e "${GREEN}Packages upgraded successfully.${NC}"
+    else
+        echo -e "${RED}Failed to upgrade packages.${NC}"
+        return 1
+    fi
+    read -p "Do you want to remove obsolete packages and clean up? (y/n): " cleanup_choice
+    if [[ $cleanup_choice == [Yy] ]]; then
+        sudo apt-get autoremove -y && sudo apt-get autoclean -y
+        echo -e "${GREEN}System cleaned up successfully.${NC}"
+    fi
+    if [ -f /var/run/reboot-required ]; then
+        echo -e "${YELLOW}A reboot is required to complete the update process.${NC}"
+        read -p "Do you want to reboot now? (y/n): " reboot_choice
+        if [[ $reboot_choice == [Yy] ]]; then
+            echo -e "${YELLOW}Rebooting now...${NC}"
+            sudo reboot
+        else
+            echo -e "${YELLOW}Remember to reboot the system later to apply all updates.${NC}"
+        fi
+    else
+        echo -e "${GREEN}System updated successfully. No reboot required.${NC}"
+    fi
+}
+
+
+setup_fail2ban() {
+    echo -e "${YELLOW}Setting up Fail2Ban...${NC}"
+    sudo apt-get install fail2ban -y
+    sudo systemctl enable fail2ban
+    sudo systemctl start fail2ban
+    echo -e "${GREEN}Fail2Ban setup completed.${NC}"
+}
+
+perform_security_audit() {
+    echo -e "${YELLOW}Performing security audit...${NC}"
+    sudo apt-get install lynis -y
+    sudo lynis audit system
+}
+
+
 display_menu() {
     RED='\033[0;31m'
     GREEN='\033[0;32m'
@@ -482,42 +630,43 @@ display_menu() {
     BOLD='\033[1m'
     UNDERLINE='\033[4m'
 
+    # Define additional color codes
+    CYAN='\033[0;36m'
+    MAGENTA='\033[0;35m'
+    LIGHT_GREEN='\033[1;32m'
+    LIGHT_CYAN='\033[1;36m'
+    LIGHT_RED='\033[1;31m'
+    LIGHT_YELLOW='\033[1;33m'
+    LIGHT_MAGENTA='\033[1;35m'
+
     clear
-    echo -e "${YELLOW}========================================${NC}"
-    echo -e "${BLUE}${BOLD}    FiveM Server Management Script    ${NC}"
-    echo -e "${YELLOW}========================================${NC}\n"
+    printf "${LIGHT_YELLOW}========================================${NC}\n"
+    printf "${LIGHT_CYAN}${BOLD}    FiveM Server Management Script    ${NC}\n"
+    printf "${LIGHT_YELLOW}========================================${NC}\n\n"
 
     # Server Management
-    echo -e "${GREEN}${BOLD}Server Management:${NC}"
-    echo -e "${GREEN}${BOLD}1.${NC} ${UNDERLINE}Create a new server${NC} - Setup a new server instance."
-    echo -e "${GREEN}${BOLD}2.${NC} ${UNDERLINE}Start a server${NC} - Launch your chosen server."
-    echo -e "${GREEN}${BOLD}3.${NC} ${UNDERLINE}Stop a server${NC} - Safely shutdown a server."
-    echo -e "${GREEN}${BOLD}4.${NC} ${UNDERLINE}Monitor server console${NC} - View real-time console output."
-    echo -e "${GREEN}${BOLD}5.${NC} ${UNDERLINE}Delete Server${NC} - Remove a server and its files.\n"
+    printf "${LIGHT_GREEN}Server Management:${NC}\n"
+
+    printf "${CYAN}1. ${NC} %-30s${NC} - %s\n" "Create a new server" "Setup a new server instance."
+    printf "${CYAN}2. ${NC} %-30s${NC} - %s\n" "Start a server" "Launch your chosen server."
+    printf "${CYAN}3. ${NC} %-30s${NC} - %s\n" "Stop a server" "Safely shutdown a server."
+    printf "${CYAN}4. ${NC} %-30s${NC} - %s\n" "Monitor server console" "View real-time console output."
+    printf "${CYAN}5. ${NC} %-30s${NC} - %s\n" "Backup server" "Configure and manage server backups."
+    printf "${CYAN}6. ${NC} %-30s${NC} - %s\n" "Debug a server" "Troubleshoot server issues."
+    printf "${CYAN}7. ${NC} %-30s${NC} - %s\n" "Delete Server" "Remove a server and its files."
 
     # Server Utilities
-    echo -e "${GREEN}${BOLD}Server Utilities:${NC}"
-    echo -e "${GREEN}${BOLD}6.${NC} ${UNDERLINE}Update txAdmin${NC} - Upgrade txAdmin to the latest."
-    echo -e "${GREEN}${BOLD}7.${NC} ${UNDERLINE}Debug a server${NC} - Troubleshoot server issues."
-    echo -e "${GREEN}${BOLD}8.${NC} ${UNDERLINE}Update script${NC} - Get the latest script version.\n"
-
-    # Advanced Features
-    echo -e "${GREEN}${BOLD}Advanced Features:${NC}"
-    echo -e "${GREEN}${BOLD}9.${NC} ${UNDERLINE}Server Performance Monitoring${NC} - View and alert on server metrics."
-    echo -e "${GREEN}${BOLD}10.${NC} ${UNDERLINE}Automated Backups${NC} - Configure and manage server backups."
-    echo -e "${GREEN}${BOLD}11.${NC} ${UNDERLINE}Mod Management${NC} - Install and update game mods."
-    echo -e "${GREEN}${BOLD}12.${NC} ${UNDERLINE}Security Enhancements${NC} - Implement security measures and monitoring.\n"
-
-    # Additional Tools
-    echo -e "${GREEN}${BOLD}Additional Tools:${NC}"
-    echo -e "${GREEN}${BOLD}13.${NC} ${UNDERLINE}API Integration${NC} - Utilize external APIs for extended functionality."
-    echo -e "${GREEN}${BOLD}14.${NC} ${UNDERLINE}Plugin System${NC} - Extend script capabilities with plugins.\n"
+    printf "${LIGHT_GREEN}Server Utilities:${NC}\n"
+    printf "${MAGENTA}8. ${NC} %-30s${NC} - %s\n" "Update txAdmin" "Upgrade txAdmin to the latest."
+    printf "${MAGENTA}9. ${NC} %-30s${NC} - %s\n\n" "Update script" "Get the latest script version."
+    printf "${MAGENTA}10.${NC} %-30s${NC} - %s\n" "Server Performance Monitoring" "View and alert on server metrics."
+    printf "${MAGENTA}11.${NC} %-30s${NC} - %s\n\n" "Security Enhancements" "Implement security measures and monitoring."
 
     # General
-    echo -e "${GREEN}${BOLD}General Options:${NC}"
-    echo -e "${GREEN}${BOLD}0.${NC} ${UNDERLINE}Exit${NC} - Close the script.\n"
+    printf "${LIGHT_GREEN}General Options:${NC}\n"
+    printf "${CYAN}0. ${NC} %-30s${NC} - %s\n\n" "Exit" "Close the script."
 
-    echo -e "${YELLOW}========================================${NC}\n"
+    printf "${LIGHT_YELLOW}========================================${NC}\n\n"
 }
 
 while true; do
@@ -528,17 +677,13 @@ while true; do
         2) start_server ;;
         3) stop_server ;;
         4) monitor_server ;;
-        5) delete_server ;;
-        6) update_txAdmin ;; 
-        7) debug_server ;;
-        8) update_script ;;
-        # Placeholder for new advanced feature implementations
-        9) monitor_server_performance ;;
-        10) perform_automated_backup ;;
-        11) echo "Mod Management feature coming soon..." ;;
-        12) echo "Security Enhancements feature coming soon..." ;;
-        13) echo "API Integration feature coming soon..." ;;
-        14) echo "Plugin System feature coming soon..." ;;
+        5) perform_automated_backup ;;
+        6) debug_server ;;
+        7) delete_server ;;
+        8) update_txAdmin ;; 
+        9) update_script ;;
+        10) monitor_server_performance ;;
+        11) manage_security ;;
         0 | exit | stop | quit) echo -e "${RED}Exiting the script. Goodbye!${NC}"; exit 0 ;;
         *) echo -e "${RED}Invalid choice. Please try again.${NC}" ;;
     esac
