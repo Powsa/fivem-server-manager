@@ -1,51 +1,77 @@
 # FiveM Server Manager
 
-FiveM Server Manager is a Bash script designed to simplify the management of FiveM servers. Whether you're setting up a new server, starting an existing one, or troubleshooting issues, this script provides a convenient interface to perform common tasks efficiently.
-
-## Features
-
-- **Dependency Installation**: The script automatically checks for and installs required dependencies (`git`, `xz`, `curl`) if they are not already installed on your system.
-  
-- **Server Management**: Easily create, start, stop, monitor, debug, and update FiveM servers with intuitive commands. The script streamlines these tasks, reducing manual effort and potential errors.
-  
-- **Interactive Menu System**: The script presents a user-friendly menu that guides you through various server management options. This interface is particularly helpful for users who are not familiar with command-line operations.
-  
-- **Error Handling**: If any errors occur during dependency installation or server management tasks, the script provides informative messages and options for retrying, skipping, or exiting gracefully.
-  
-- **Script Management**: Keep your script up to date by easily updating it from the GitHub repository. This ensures you have access to the latest features, bug fixes, and improvements.
+Welcome to the advanced FiveM Server Manager! This script is a powerful tool designed to simplify the management and administration of FiveM servers, offering a wide range of features to meet the needs of server owners and administrators. Below is an in-depth overview of the script's advanced functionality:
 
 ## Usage
 
-1. **Clone the Repository**: Start by cloning this repository to your local machine using the following command:
+To make the most of the advanced features provided by the script, follow these steps:
+
+1. **Clone the Repository**: Begin by cloning this repository to your local machine. Open your terminal or command prompt and execute the following command:
    ```bash
    git clone https://github.com/Syslogine/fivem-server-manager.git
    ```
 
-2. **Navigate to the Directory**: Move into the cloned directory:
+2. **Navigate to the Script Directory**: Move into the directory containing the script using the `cd` command followed by the directory name:
    ```bash
    cd fivem-server-manager
    ```
 
-3. **Make the Script Executable**: Ensure that the script has the necessary permissions to be executed:
-   ```bash
-   chmod +x fivemanager.sh
-   ```
-
-4. **Run the Script**: Execute the script to access the interactive menu:
+3. **Execute the Script**: Once inside the script directory, execute the script by running the following command in your terminal:
    ```bash
    ./fivemanager.sh
    ```
 
-5. **Follow the Menu Options**: Use the numbered menu options to perform various server management tasks such as creating a new server, starting or stopping an existing server, monitoring server output, debugging, or updating the script itself.
+4. **Follow On-screen Prompts**: The script will present you with a menu displaying various advanced options for managing your server. Simply follow the on-screen prompts to perform your desired actions.
 
-## Contributing
+## Requirements
 
-Contributions are welcome! If you encounter any issues, have suggestions for improvements, or want to contribute code enhancements, feel free to open an issue or submit a pull request. Your input helps make this project better for everyone.
+To use this script effectively, ensure that your system meets the following requirements:
+
+- Linux Operating System (Ubuntu, CentOS, Debian, etc.)
+- Bash Shell
+- Necessary dependencies like `git`, `curl`, `unzip`, etc.
+
+## Features
+
+### Server Management
+
+- **Server Creation**: Quickly create new FiveM server instances with customizable configurations, including server name, resources, server data path, server port, and more.
+- **Server Start**: Start a designated FiveM server instance with a single command.
+- **Server Stop**: Gracefully shut down a running FiveM server to ensure data integrity.
+- **Server Restart**: Restart a running FiveM server instance without interrupting gameplay.
+- **Server Update**: Automatically update the FiveM server resources to the latest versions available.
+
+### Monitoring and Logging
+
+- **Real-time Console Output**: View live console output from the FiveM server to monitor player activity, server performance, and debug issues in real-time.
+- **Server Logs**: Access and analyze comprehensive server logs to track player actions, server events, errors, and more.
+
+### Security Enhancements
+
+- **Firewall Configuration**: Configure firewall rules to restrict access to the FiveM server and enhance security.
+- **SSH Hardening**: Implement best practices to secure SSH access to the server, including key-based authentication, disabling root login, and more.
+- **Automatic Security Updates**: Automatically apply security updates to the server operating system and installed packages to mitigate potential vulnerabilities.
+- **Fail2Ban Integration**: Set up Fail2Ban to prevent brute-force attacks and protect against unauthorized access attempts.
+
+### Backup and Recovery
+
+- **Server Backup**: Schedule automatic backups of the FiveM server data, including server configuration, resources, player data, and more, to ensure data integrity and disaster recovery.
+- **Backup Management**: Easily manage and restore server backups from a centralized interface.
+
+### Script Management
+
+- **Automatic Updates**: Check for and apply updates to the management script itself to ensure access to the latest features, bug fixes, and improvements.
+- **Customization Options**: Customize script behavior and configurations to suit your specific requirements and preferences.
+- **Extensibility**: Easily extend the script's functionality through modular design and integration with third-party tools and services.
+
+## Contributions
+
+Contributions to this script are highly encouraged! If you encounter any bugs, have feature requests, or want to contribute improvements, feel free to open an issue or submit a pull request on GitHub.
 
 ## License
 
-This project is licensed under the [MIT License](LICENSE), which means you are free to use, modify, and distribute the script for both personal and commercial purposes, with appropriate attribution.
+This script is licensed under the [MIT License](LICENSE).
 
-## Credits
+## Disclaimer
 
-This script is maintained by [Yarpii](https://github.com/Syslogine), aiming to simplify the management of FiveM servers for users of all experience levels.
+This script is provided as-is, without any warranty or guarantee. Use it at your own risk.
