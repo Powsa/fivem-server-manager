@@ -432,6 +432,43 @@ monitor_server_performance() {
     echo -e "${GREEN}System Uptime:${NC} ${UPTIME}"
 }
 
+perform_automated_backup() {
+    echo -e "${YELLOW}Initiating automated backup...${NC}"
+    script_dir="$(dirname "$(realpath "$0")")"
+    backup_dir="${script_dir}/backup"
+    mkdir -p "$backup_dir"
+    servers_dir="${script_dir}"
+    echo "Available servers for backup:"
+    available_servers=()
+    for dir in "$servers_dir"/*/; do
+        if [ -d "$dir" ]; then
+            server_name=$(basename "$dir")
+            available_servers+=("$server_name")
+            echo "${#available_servers[@]}. $server_name"
+        fi
+    done
+    if [ ${#available_servers[@]} -eq 0 ]; then
+        echo -e "${RED}No servers found to backup.${NC}"
+        return
+    fi
+    read -p "Enter the number of the server you want to backup: " server_choice
+    if ! [[ "$server_choice" =~ ^[0-9]+$ ]] || [ "$server_choice" -lt 1 ] || [ "$server_choice" -gt ${#available_servers[@]} ]; then
+        echo -e "${RED}Invalid selection. Please try again.${NC}"
+        return
+    fi
+    target_directory="${servers_dir}/${available_servers[$server_choice-1]}"
+    backup_filename="server_backup_${available_servers[$server_choice-1]}_$(date +%Y%m%d_%H%M%S).tar.gz"
+    tar -czf "${backup_dir}/${backup_filename}" -C "$target_directory" .
+    if [ $? -eq 0 ]; then
+        echo -e "${GREEN}Backup of ${available_servers[$server_choice-1]} completed successfully: ${backup_filename}${NC}"
+    else
+        echo -e "${RED}Backup failed.${NC}"
+        return 1
+    fi
+    keep_last_n=5
+    cd "$backup_dir" && ls -tp | grep -v '/$' | tail -n +$((keep_last_n + 1)) | xargs -I {} rm -- {}
+}
+
 handle_invalid_choice() {
     echo "Invalid choice: $1. Please try again."
 }
@@ -441,7 +478,7 @@ display_menu() {
     GREEN='\033[0;32m'
     YELLOW='\033[1;33m'
     BLUE='\033[0;34m'
-    NC='\033[0m' # No Color
+    NC='\033[0m'
     BOLD='\033[1m'
     UNDERLINE='\033[4m'
 
@@ -497,7 +534,7 @@ while true; do
         8) update_script ;;
         # Placeholder for new advanced feature implementations
         9) monitor_server_performance ;;
-        10) echo "Automated Backups feature coming soon..." ;;
+        10) perform_automated_backup ;;
         11) echo "Mod Management feature coming soon..." ;;
         12) echo "Security Enhancements feature coming soon..." ;;
         13) echo "API Integration feature coming soon..." ;;
