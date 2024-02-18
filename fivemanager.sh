@@ -129,7 +129,6 @@ stop_server() {
     fi
 }
 
-
 monitor_server() {
     script_dir="$(dirname "$(realpath "$0")")"
     available_servers=()
@@ -259,7 +258,6 @@ update_script() {
     fi
 }
 
-# Debug function
 debug_server() {
     echo "Select a server to debug:"
     script_dir="$(dirname "$(realpath "$0")")"
@@ -298,7 +296,6 @@ debug_server() {
         echo "Server log file not found."
         read -p "Would you like to create one? (y/N): " create_choice
         if [[ $create_choice =~ ^[Yy]$ ]]; then
-            # Attempt to create an empty log file
             touch "$log_file" && echo "Log file created at $log_file" || echo "Failed to create log file."
         else
             echo "Not creating a log file."
@@ -354,7 +351,6 @@ update_txAdmin() {
     echo "txAdmin update process complete."
 }
 
-# Function to delete a server
 delete_server() {
     script_dir="$(dirname "$(realpath "$0")")"
     available_servers=()
@@ -424,7 +420,7 @@ monitor_server_performance() {
     
     ACTIVE_CONNS=$(ss -tun | grep -vc "State")
     echo -e "${GREEN}Active Connections:${NC} ${ACTIVE_CONNS}"
-    
+
     MYSQL_RUNNING=$(pgrep mysql > /dev/null && echo "Running" || echo "Not Running")
     NGINX_RUNNING=$(pgrep nginx > /dev/null && echo "Running" || echo "Not Running")
     REDIS_RUNNING=$(pgrep redis-server > /dev/null && echo "Running" || echo "Not Running")
@@ -644,17 +640,91 @@ perform_updates() {
 }
 
 setup_fail2ban() {
-    echo -e "${YELLOW}Setting up Fail2Ban...${NC}"
-    sudo apt-get install fail2ban -y
-    sudo systemctl enable fail2ban
-    sudo systemctl start fail2ban
-    echo -e "${GREEN}Fail2Ban setup completed.${NC}"
+    echo -e "${YELLOW}Checking for Fail2Ban installation...${NC}"
+    if command -v fail2ban-client &> /dev/null; then
+        echo -e "${GREEN}Fail2Ban is already installed.${NC}"
+    else
+        echo -e "${YELLOW}Installing Fail2Ban...${NC}"
+        if sudo apt-get install fail2ban -y; then
+            echo -e "${GREEN}Fail2Ban installed successfully.${NC}"
+        else
+            echo -e "${RED}Failed to install Fail2Ban. Please check your package manager and internet connection.${NC}"
+            return 1
+        fi
+    fi
+    echo -e "${YELLOW}Enabling and starting Fail2Ban...${NC}"
+    if sudo systemctl enable fail2ban && sudo systemctl start fail2ban; then
+        echo -e "${GREEN}Fail2Ban enabled and started successfully.${NC}"
+    else
+        echo -e "${RED}Failed to enable or start Fail2Ban. Please check the system logs for more details.${NC}"
+        return 1
+    fi
+    echo -e "${YELLOW}Verifying Fail2Ban status...${NC}"
+    if sudo systemctl is-active --quiet fail2ban; then
+        echo -e "${GREEN}Fail2Ban is running.${NC}"
+    else
+        echo -e "${RED}Fail2Ban is not running. Please investigate the issue with 'sudo systemctl status fail2ban'.${NC}"
+        return 1
+    fi
+    read -p "Do you want to apply a custom Fail2Ban configuration? (y/N): " apply_custom_config
+    if [[ "$apply_custom_config" =~ ^[Yy]$ ]]; then
+        read -p "Enter the full path to your custom Fail2Ban configuration file: " custom_config_path
+        if [ -f "$custom_config_path" ]; then
+            custom_config_dir="/etc/fail2ban"
+            sudo cp "$custom_config_path" "$custom_config_dir"
+            if [ $? -eq 0 ]; then
+                echo -e "${GREEN}Custom Fail2Ban configuration applied successfully.${NC}"
+                sudo systemctl reload fail2ban
+            else
+                echo -e "${RED}Failed to apply custom Fail2Ban configuration. Please check the file path and permissions.${NC}"
+                return 1
+            fi
+        else
+            echo -e "${RED}Configuration file does not exist at the specified path. Skipping custom configuration.${NC}"
+        fi
+    fi
 }
 
 perform_security_audit() {
-    echo -e "${YELLOW}Performing security audit...${NC}"
-    sudo apt-get install lynis -y
-    sudo lynis audit system
+    echo -e "${YELLOW}Checking for Lynis installation...${NC}"
+    if command -v lynis &> /dev/null; then
+        echo -e "${GREEN}Lynis is already installed.${NC}"
+    else
+        echo -e "${YELLOW}Installing Lynis...${NC}"
+        if sudo apt-get install lynis -y; then
+            echo -e "${GREEN}Lynis installed successfully.${NC}"
+        else
+            echo -e "${RED}Failed to install Lynis. Please check your package manager and internet connection.${NC}"
+            return 1
+        fi
+    fi
+    echo -e "${YELLOW}Performing security audit with Lynis...${NC}"
+    read -p "Do you want to perform a full system audit or a custom audit? (F/c): " audit_choice
+    case $audit_choice in
+        [cC]* )
+            read -p "Enter Lynis audit options (e.g., --tests-from group, --check-update): " custom_options
+            audit_command="sudo lynis $custom_options"
+            ;;
+        * )
+            audit_command="sudo lynis audit system"
+            ;;
+    esac
+    if $audit_command; then
+        echo -e "${GREEN}Lynis audit completed successfully.${NC}"
+    else
+        echo -e "${RED}Lynis audit encountered an issue. Please check the output above for details.${NC}"
+        return 1
+    fi
+    read -p "Do you want to save the audit report to a file? (y/N): " save_report
+    if [[ "$save_report" =~ ^[Yy]$ ]]; then
+        report_file="/var/log/lynis-$(date +%Y%m%d-%H%M%S).log"
+        if $audit_command > "$report_file" 2>&1; then
+            echo -e "${GREEN}Lynis audit report saved to ${report_file}.${NC}"
+        else
+            echo -e "${RED}Failed to save Lynis audit report. Please check permissions and disk space.${NC}"
+            return 1
+        fi
+    fi
 }
 
 display_menu() {
@@ -666,7 +736,6 @@ display_menu() {
     BOLD='\033[1m'
     UNDERLINE='\033[4m'
 
-    # Define additional color codes
     CYAN='\033[0;36m'
     MAGENTA='\033[0;35m'
     LIGHT_GREEN='\033[1;32m'
@@ -680,7 +749,6 @@ display_menu() {
     printf "${LIGHT_CYAN}${BOLD}    FiveM Server Management Script    ${NC}\n"
     printf "${LIGHT_YELLOW}========================================${NC}\n\n"
 
-    # Server Management
     printf "${LIGHT_GREEN}Server Management:${NC}\n"
 
     printf "${CYAN}1. ${NC} %-30s${NC} - %s\n" "Create a new server" "Setup a new server instance."
@@ -689,16 +757,14 @@ display_menu() {
     printf "${CYAN}4. ${NC} %-30s${NC} - %s\n" "Monitor server console" "View real-time console output."
     printf "${CYAN}5. ${NC} %-30s${NC} - %s\n" "Backup server" "Configure and manage server backups."
     printf "${CYAN}6. ${NC} %-30s${NC} - %s\n" "Debug a server" "Troubleshoot server issues."
-    printf "${CYAN}7. ${NC} %-30s${NC} - %s\n" "Delete Server" "Remove a server and its files."
+    printf "${CYAN}7. ${NC} %-30s${NC} - %s\n\n" "Delete Server" "Remove a server and its files."
 
-    # Server Utilities
     printf "${LIGHT_GREEN}Server Utilities:${NC}\n"
     printf "${CYAN}8. ${NC} %-30s${NC} - %s\n" "Update txAdmin" "Upgrade txAdmin to the latest."
     printf "${CYAN}9. ${NC} %-30s${NC} - %s\n" "Update script" "Get the latest script version."
     printf "${CYAN}10.${NC} %-30s${NC} - %s\n" "Server Performance Monitoring" "View and alert on server metrics."
     printf "${CYAN}11.${NC} %-30s${NC} - %s\n\n" "Security Enhancements" "Implement security measures and monitoring."
 
-    # General
     printf "${LIGHT_GREEN}General Options:${NC}\n"
     printf "${CYAN}0. ${NC} %-30s${NC} - %s\n\n" "Exit" "Close the script."
 
