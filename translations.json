@@ -31,12 +31,6 @@
     "failed_to_stop_server": "Failed to stop server $server_name.",
     "no_servers_found_to_monitor": "No servers found in the server directory. Cannot monitor any servers.",
     "available_servers_to_monitor": "Available servers:",
-
-
-
-
-
-
     "enter_server_number_to_monitor": "Enter the number of the server you want to monitor:",
     "invalid_choice_monitor": "Invalid choice. Please enter a valid number.",
     "now_monitoring": "Now monitoring $server_name. To detach and return to the menu, press 'Ctrl+A' followed by 'D'.",
@@ -464,7 +458,7 @@
     "save_audit_report_to_file": "Wilt u het auditrapport opslaan in een bestand? (j/N): ",
     "lynis_audit_report_saved": "Lynis auditrapport opgeslagen in ${report_file}.",
     "failed_to_save_lynis_audit_report": "Opslaan van Lynis auditrapport mislukt. Controleer de rechten en schijfruimte.",
-    "menu_header": "FiveM Serverbeheerscript",
+    "menu_header": "FiveM Server Management Script",
     "server_management": "Serverbeheer:",
     "create_new_server": "Maak een nieuwe server",
     "start_server": "Start server",
