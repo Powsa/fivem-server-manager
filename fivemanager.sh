@@ -428,7 +428,6 @@ delete_server() {
     fi
 }
 
-
 monitor_server_performance() {
     printf "\033c"
     echo -e "${YELLOW}$(get_translation "gathering_system_performance")${NC}\n"
@@ -460,14 +459,22 @@ monitor_server_performance() {
     echo -e "${GREEN}$(get_translation "public_ipv4"):${NC} $PUBLIC_IP"
     echo -e "${GREEN}$(get_translation "active_connections"):${NC} $ACTIVE_CONNS\n"
     echo -e "${YELLOW}$(get_translation "services")${NC}"
-    MYSQL_RUNNING=$(pgrep mysql > /dev/null && echo "$(get_translation "running")" || echo "$(get_translation "not_running")")
-    MARIADB_RUNNING=$(pgrep mariadbd > /dev/null && echo "$(get_translation "running")" || echo "$(get_translation "not_running")")
-    NGINX_RUNNING=$(pgrep nginx > /dev/null && echo "$(get_translation "running")" || echo "$(get_translation "not_running")")
-    REDIS_RUNNING=$(pgrep redis-server > /dev/null && echo "$(get_translation "running")" || echo "$(get_translation "not_running")")
-    echo -e "${GREEN}$(get_translation "mysql")${NC} $(get_translation "$MYSQL_RUNNING")"
-    echo -e "${GREEN}$(get_translation "mariadb")${NC} $(get_translation "$MARIADB_RUNNING")"
-    echo -e "${GREEN}$(get_translation "nginx")${NC} $(get_translation "$NGINX_RUNNING")"
-    echo -e "${GREEN}$(get_translation "redis")${NC} $(get_translation "$REDIS_RUNNING")\n"
+    check_process_status() {
+        local process_name=$1
+        if pgrep "$process_name" > /dev/null; then
+            echo "$(get_translation "running")"
+        else
+            echo "$(get_translation "not_running")"
+        fi
+    }
+    MYSQL_RUNNING=$(check_process_status "mysql")
+    MARIADB_RUNNING=$(check_process_status "mariadbd")
+    NGINX_RUNNING=$(check_process_status "nginx")
+    REDIS_RUNNING=$(check_process_status "redis-server")
+    echo -e "${GREEN}$(get_translation "mysql")${NC} $MYSQL_RUNNING"
+    echo -e "${GREEN}$(get_translation "mariadb")${NC} $MARIADB_RUNNING"
+    echo -e "${GREEN}$(get_translation "nginx")${NC} $NGINX_RUNNING"
+    echo -e "${GREEN}$(get_translation "redis")${NC} $REDIS_RUNNING\n"
     echo -e "${YELLOW}$(get_translation "users_security")${NC}"
     USER_SESSIONS=$(who | wc -l)
     SSH_USERS=$(getent passwd | grep /home | wc -l)
@@ -801,13 +808,13 @@ display_menu() {
     # Server Utilities Section
     printf "${LIGHT_GREEN}$(get_translation "server_utilities")${NC}\n"
     printf "${CYAN}8. ${NC} %-30s${NC} - %s\n" "$(get_translation "update_txadmin")" "$(get_translation "update_txadmin_desc")"
-    printf "${CYAN}9. ${NC} %-30s${NC} - %s\n" "$(get_translation "update_script")" "$(get_translation "update_script_desc")"
-    printf "${CYAN}10.${NC} %-30s${NC} - %s\n" "$(get_translation "server_performance_monitoring")" "$(get_translation "server_performance_monitoring_desc")"
-    printf "${CYAN}11.${NC} %-30s${NC} - %s\n\n" "$(get_translation "security_enhancements")" "$(get_translation "security_enhancements_desc")"
+    printf "${CYAN}9. ${NC} %-30s${NC} - %s\n" "$(get_translation "server_performance_monitoring")" "$(get_translation "server_performance_monitoring_desc")"
+    printf "${CYAN}10.${NC} %-30s${NC} - %s\n\n" "$(get_translation "security_enhancements")" "$(get_translation "security_enhancements_desc")"
 
     # General Options Section
     printf "${LIGHT_GREEN}$(get_translation "general_options")${NC}\n"
-    printf "${CYAN}12.${NC} %-30s${NC} - %s\n" "$(get_translation "change_language_option")" "$(get_translation "change_language_option_desc")"
+    printf "${CYAN}11.${NC} %-30s${NC} - %s\n" "$(get_translation "change_language_option")" "$(get_translation "change_language_option_desc")"
+    printf "${CYAN}12.${NC} %-30s${NC} - %s\n" "$(get_translation "update_script")" "$(get_translation "update_script_desc")"
     printf "${CYAN}0. ${NC} %-30s${NC} - %s\n\n" "$(get_translation "exit")" "$(get_translation "exit_desc")"
 
     # Footer
@@ -826,10 +833,10 @@ while true; do
         6) debug_server ;;
         7) delete_server ;;
         8) update_txAdmin ;;
-        9) update_script ;;
-        10) monitor_server_performance ;;
-        11) manage_security ;;
-        12) change_language ;; # Voeg de case toe voor de optie om de taal te wijzigen
+        9) monitor_server_performance ;;
+        10) manage_security ;;
+        11) change_language ;;
+        12) update_script ;;
         0 | exit | stop | quit) echo -e "${RED}$(get_translation "exiting_script")${NC}"; exit 0 ;;
         *) echo -e "${RED}$(get_translation "invalid_choice1")${NC}" ;;
     esac

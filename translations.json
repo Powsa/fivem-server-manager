@@ -114,10 +114,6 @@
     "usage": "Usage:",
     "total_ram": "Total RAM:",
     "swap_usage": "Swap Usage:",
-
-
-
-
     "disk_usage": "Disk Usage:",
     "load_average": "Load Average:",
     "local_ipv4": "Local IPv4:",
@@ -248,7 +244,13 @@
     "change_language_option": "Change language",
     "change_language_option_desc": "(current language: English)",
     "choose_language": "Choose your language (en, nl, es): ",
-    "language_set_to": "Language set to: English"
+    "language_set_to": "Language set to: English",
+    "mysql": "MySQL",
+    "not_running": "Not running",
+    "mariadb": "MariaDB",
+    "running": "Running",
+    "nginx": "Nginx",
+    "redis": "Redis"
   },
   "nl": {
     "attempting_to_install": "Poging tot installeren van",
@@ -495,7 +497,13 @@
     "change_language_option": "Wijzig taal",
     "change_language_option_desc": "(huidige taal: Nederlands)",
     "choose_language": "Kies uw taal (en, nl, es): ",
-    "language_set_to": "Taal is ingesteld op: Nederlands"
+    "language_set_to": "Taal is ingesteld op: Nederlands",
+    "mysql": "MySQL",
+    "not_running": "Niet actief",
+    "mariadb": "MariaDB",
+    "running": "Actief",
+    "nginx": "Nginx",
+    "redis": "Redis"
   },
   "es": {
     "attempting_to_install": "Intentando instalar",
@@ -742,6 +750,12 @@
     "change_language_option": "Cambiar idioma",
     "change_language_option_desc": "(idioma actual: Español)",
     "choose_language": "Elige tu idioma (en, nl, es): ",
-    "language_set_to": "Idioma establecido en: Español"
+    "language_set_to": "Idioma establecido en: Español",
+    "mysql": "MySQL",
+    "not_running": "No está en funcionamiento",
+    "mariadb": "MariaDB",
+    "running": "En funcionamiento",
+    "nginx": "Nginx",
+    "redis": "Redis"
   }
 }
