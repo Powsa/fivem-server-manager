@@ -88,18 +88,24 @@ start_server() {
 }
 
 stop_server() {
-    local sessions=$(screen -ls | awk '/\.testserver\t/ {print $1}' | sed 's/.*\.//')
-    local session_array=($sessions)
-    if [ ${#session_array[@]} -eq 0 ]; then
-        echo "No active FiveM server sessions found."
-        return 0
+    local script_dir="$(dirname "$(realpath "$0")")"
+    local available_servers=()
+    for dir in "$script_dir"/*/; do
+        if [ -f "${dir}run.sh" ]; then
+            available_servers+=("$dir")
+        fi
+    done
+    if [ ${#available_servers[@]} -eq 0 ]; then
+        echo "No servers found in the server directory. Cannot stop any servers."
+        return 1
     fi
-    echo "Active FiveM Server Sessions:"
-    for i in "${!session_array[@]}"; do
-        echo "$((i+1)). ${session_array[$i]}"
+    echo "Available servers:"
+    for ((i=0; i<${#available_servers[@]}; i++)); do
+        local server_name=$(basename "${available_servers[$i]}")
+        echo "$((i+1)). $server_name"
     done
     read -p "Enter the number of the server to stop (0 to cancel): " choice
-    if ! [[ "$choice" =~ ^[0-9]+$ ]] || [ "$choice" -lt 1 ] || [ "$choice" -gt ${#session_array[@]} ]; then
+    if [[ ! "$choice" =~ ^[0-9]+$ ]] || [ "$choice" -lt 1 ] || [ "$choice" -gt ${#available_servers[@]} ]; then
         echo "Invalid choice. Operation cancelled."
         return 1
     fi
@@ -107,11 +113,11 @@ stop_server() {
         echo "Operation cancelled by user."
         return 0
     fi
-    local selected_server_name=${session_array[$((choice-1))]}
+    local selected_server_path="${available_servers[$((choice-1))]}"
+    local selected_server_name=$(basename "$selected_server_path")
     if screen -S "$selected_server_name" -X quit; then
         echo "Server $selected_server_name stopped successfully."
-        local script_dir="$(dirname "$(realpath "$0")")"
-        local log_path="$script_dir/$selected_server_name/server.log"
+        local log_path="${selected_server_path}server.log"
         if [[ -f "$log_path" ]]; then
             echo "$(date '+%Y-%m-%d %H:%M:%S') - Server '$selected_server_name' stopped." >> "$log_path"
             echo "Server stop event logged in $selected_server_name/server.log"
@@ -122,6 +128,7 @@ stop_server() {
         echo "Failed to stop server $selected_server_name."
     fi
 }
+
 
 monitor_server() {
     script_dir="$(dirname "$(realpath "$0")")"
@@ -605,7 +612,6 @@ perform_updates() {
     fi
 }
 
-
 setup_fail2ban() {
     echo -e "${YELLOW}Setting up Fail2Ban...${NC}"
     sudo apt-get install fail2ban -y
@@ -619,7 +625,6 @@ perform_security_audit() {
     sudo apt-get install lynis -y
     sudo lynis audit system
 }
-
 
 display_menu() {
     RED='\033[0;31m'
