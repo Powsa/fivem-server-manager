@@ -13,7 +13,7 @@
     "no_servers_found": "No servers found in the server directory with a run.sh script. Cannot start any servers.",
     "available_servers": "Available servers:",
     "enter_server_number": "Enter the number of the server you want to start:",
-    "invalid_choice": "Invalid choice. Please enter a valid number.",
+    "invalid_choice0": "Invalid choice. Please enter a valid number.",
     "select_start_method": "Select the start method for the server:",
     "standard_start": "1. Standard start (run.sh)",
     "start_with_config": "2. Start with server.cfg (run.sh +exec server.cfg)",
@@ -227,7 +227,7 @@
     "enter_your_choice": "Enter your choice: ",
     "press_enter_to_continue": "Press enter to continue...",
     "exiting_script": "Exiting the script. Goodbye!",
-    "invalid_choice": "Invalid choice. Please try again."
+    "invalid_choice1": "Invalid choice. Please try again."
 
   },
   "nl": {
@@ -244,7 +244,7 @@
     "no_servers_found": "Geen servers gevonden in de servermap met een run.sh script. Kan geen servers starten.",
     "available_servers": "Beschikbare servers:",
     "enter_server_number": "Voer het nummer van de server in die je wilt starten:",
-    "invalid_choice": "Ongeldige keuze. Voer alstublieft een geldig nummer in.",
+    "invalid_choice0": "Ongeldige keuze. Voer alstublieft een geldig nummer in.",
     "select_start_method": "Selecteer de startmethode voor de server:",
     "standard_start": "1. Standaard start (run.sh)",
     "start_with_config": "2. Starten met server.cfg (run.sh +exec server.cfg)",
@@ -458,6 +458,6 @@
     "enter_your_choice": "Voer uw keuze in: ",
     "press_enter_to_continue": "Druk op enter om verder te gaan...",
     "exiting_script": "Het script wordt afgesloten. Tot ziens!",
-    "invalid_choice": "Ongeldige keuze. Probeer het opnieuw."
+    "invalid_choice1": "Ongeldige keuze. Probeer het opnieuw."
   }
 }
