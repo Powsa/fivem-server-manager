@@ -441,40 +441,89 @@ monitor_server_performance() {
 
 perform_automated_backup() {
     echo -e "${YELLOW}Initiating automated backup...${NC}"
-    script_dir="$(dirname "$(realpath "$0")")"
-    backup_dir="${script_dir}/backup"
+    local script_dir="$(dirname "$(realpath "$0")")"
+    local backup_dir="${script_dir}/backup"
     mkdir -p "$backup_dir"
-    servers_dir="${script_dir}"
+    
     echo "Available servers for backup:"
-    available_servers=()
-    for dir in "$servers_dir"/*/; do
-        if [ -d "$dir" ]; then
-            server_name=$(basename "$dir")
+    local available_servers=()
+    local i=0
+    for dir in "$script_dir"/*/; do
+        if [ -d "$dir" ] && [ -f "${dir}run.sh" ]; then
+            local server_name=$(basename "$dir")
             available_servers+=("$server_name")
-            echo "${#available_servers[@]}. $server_name"
+            ((i++))
+            echo "$i. $server_name"
         fi
     done
+    
     if [ ${#available_servers[@]} -eq 0 ]; then
         echo -e "${RED}No servers found to backup.${NC}"
         return
     fi
-    read -p "Enter the number of the server you want to backup: " server_choice
+    
+    read -p "Enter the number of the server you want to backup (or '0' to cancel): " server_choice
+    if [[ "$server_choice" == "0" ]]; then
+        echo "Backup operation cancelled."
+        return
+    fi
+    
     if ! [[ "$server_choice" =~ ^[0-9]+$ ]] || [ "$server_choice" -lt 1 ] || [ "$server_choice" -gt ${#available_servers[@]} ]; then
         echo -e "${RED}Invalid selection. Please try again.${NC}"
         return
     fi
-    target_directory="${servers_dir}/${available_servers[$server_choice-1]}"
-    backup_filename="server_backup_${available_servers[$server_choice-1]}_$(date +%Y%m%d_%H%M%S).tar.gz"
-    tar -czf "${backup_dir}/${backup_filename}" -C "$target_directory" .
+    
+    local target="${available_servers[$server_choice-1]}"
+    local target_dir="${script_dir}/${target}"
+    local backup_filename="server_backup_${target}_$(date +%Y%m%d_%H%M%S)"
+    
+    # Check if the user wants to backup the database
+    read -p "Do you want to backup the database for ${target}? (y/n): " backup_db
+    if [[ "$backup_db" =~ ^[Yy]$ ]]; then
+        local server_cfg="${target_dir}/server.cfg"
+        if [ -f "$server_cfg" ]; then
+            local db_info=$(grep 'set mysql_connection_string' "$server_cfg" | cut -d '"' -f 2)
+            local username=$(echo $db_info | cut -d ':' -f 2 | cut -d '/' -f 3)
+            local password=$(echo $db_info | cut -d '@' -f 1 | cut -d ':' -f 3)
+            local db=$(echo $db_info | cut -d '/' -f 4 | cut -d '?' -f 1)
+            local host=$(echo $db_info | cut -d '@' -f 2 | cut -d '/' -f 1)
+
+            local db_backup_filename="${backup_filename}_db.sql"
+            echo "Performing database backup..."
+            mysqldump -u "$username" -p"$password" -h "$host" "$db" > "${target_dir}/${db_backup_filename}"
+            if [ $? -eq 0 ]; then
+                echo -e "${GREEN}Database backup of ${target} completed successfully: ${db_backup_filename}${NC}"
+            else
+                echo -e "${RED}Database backup failed for ${target}.${NC}"
+                return 1
+            fi
+        else
+            echo "Server configuration file not found. Skipping database backup."
+        fi
+    fi
+    
+    backup_filename="${backup_filename}.tar.gz"
+    tar -czf "${backup_dir}/${backup_filename}" -C "$script_dir" "$target" 2>/dev/null
+    
     if [ $? -eq 0 ]; then
-        echo -e "${GREEN}Backup of ${available_servers[$server_choice-1]} completed successfully: ${backup_filename}${NC}"
+        echo -e "${GREEN}File backup of ${target} completed successfully: ${backup_filename}${NC}"
     else
-        echo -e "${RED}Backup failed.${NC}"
+        echo -e "${RED}File backup failed for ${target}.${NC}"
         return 1
     fi
-    keep_last_n=5
-    cd "$backup_dir" && ls -tp | grep -v '/$' | tail -n +$((keep_last_n + 1)) | xargs -I {} rm -- {}
+    
+    # Optionally, remove the standalone DB backup file after it's included in the tarball
+    [[ "$backup_db" =~ ^[Yy]$ ]] && rm -f "${target_dir}/${db_backup_filename}"
+    
+    # Cleanup old backups, keeping the last N
+    local keep_last_n=5
+    echo "Cleaning up old backups, keeping the last $keep_last_n backups..."
+    find "$backup_dir" -type f -name 'server_backup_*' | sort -r | tail -n +$((keep_last_n + 1)) | xargs rm -f
 }
+
+
+
+
 
 handle_invalid_choice() {
     echo "Invalid choice: $1. Please try again."
@@ -662,10 +711,10 @@ display_menu() {
 
     # Server Utilities
     printf "${LIGHT_GREEN}Server Utilities:${NC}\n"
-    printf "${MAGENTA}8. ${NC} %-30s${NC} - %s\n" "Update txAdmin" "Upgrade txAdmin to the latest."
-    printf "${MAGENTA}9. ${NC} %-30s${NC} - %s\n\n" "Update script" "Get the latest script version."
-    printf "${MAGENTA}10.${NC} %-30s${NC} - %s\n" "Server Performance Monitoring" "View and alert on server metrics."
-    printf "${MAGENTA}11.${NC} %-30s${NC} - %s\n\n" "Security Enhancements" "Implement security measures and monitoring."
+    printf "${CYAN}8. ${NC} %-30s${NC} - %s\n" "Update txAdmin" "Upgrade txAdmin to the latest."
+    printf "${CYAN}9. ${NC} %-30s${NC} - %s\n\n" "Update script" "Get the latest script version."
+    printf "${CYAN}10.${NC} %-30s${NC} - %s\n" "Server Performance Monitoring" "View and alert on server metrics."
+    printf "${CYAN}11.${NC} %-30s${NC} - %s\n\n" "Security Enhancements" "Implement security measures and monitoring."
 
     # General
     printf "${LIGHT_GREEN}General Options:${NC}\n"
@@ -676,7 +725,7 @@ display_menu() {
 
 while true; do
     display_menu
-    read -p "$(echo -e ${BLUE}Enter your choice:${NC} )" choice
+    read -p "$(echo -e Enter your choice:${NC} )" choice
     case $choice in
         1) create_server ;;
         2) start_server ;;
