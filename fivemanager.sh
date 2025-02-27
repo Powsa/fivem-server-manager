@@ -19,7 +19,7 @@ LIGHT_YELLOW='\033[1;33m'
 LIGHT_MAGENTA='\033[1;35m'
 
 LANGUAGE="en"
-TRANSLATIONS_URL="https://github.com/Syslogine/fivem-server-manager/blob/main/translations.json"
+TRANSLATIONS_URL="https://raw.githubusercontent.com/Syslogine/fivem-server-manager/main/translations.json"
 TRANSLATIONS_FILE="$(pwd)/translations_cache.json"
 
 if [ ! -f "$TRANSLATIONS_FILE" ]; then
