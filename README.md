@@ -2,26 +2,38 @@
 
 Welcome to the advanced FiveM Server Manager! This script is a powerful tool designed to simplify the management and administration of FiveM servers, offering a wide range of features to meet the needs of server owners and administrators. Below is an in-depth overview of the script's advanced functionality:
 
-## Usage
+## **Usage**
 
 To make the most of the advanced features provided by the script, follow these steps:
 
-1. **Clone the Repository**: Begin by cloning this repository to your local machine. Open your terminal or command prompt and execute the following command:
+1. **Clone the Repository**:  
+   Begin by cloning this repository to your local machine. Open your terminal and execute the following command:
    ```bash
    git clone https://github.com/Syslogine/fivem-server-manager.git
    ```
 
-2. **Navigate to the Script Directory**: Move into the directory containing the script using the `cd` command followed by the directory name:
+2. **Navigate to the Script Directory**:  
+   Move into the directory containing the script using:
    ```bash
    cd fivem-server-manager
    ```
 
-3. **Execute the Script**: Once inside the script directory, execute the script by running the following command in your terminal:
+3. **Make the Script Executable** (Required on Debian/Linux):  
+   Before running the script, you need to grant execution permissions:
+   ```bash
+   chmod +x fivemanager.sh
+   ```
+
+4. **Execute the Script**:  
+   Now you can run the script using:
    ```bash
    ./fivemanager.sh
    ```
 
-4. **Follow On-screen Prompts**: The script will present you with a menu displaying various advanced options for managing your server. Simply follow the on-screen prompts to perform your desired actions.
+5. **Follow On-screen Prompts**:  
+   The script will present you with a menu displaying various advanced options for managing your server. Simply follow the on-screen prompts to perform your desired actions.
+
+---
 
 ## Requirements
 
