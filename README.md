@@ -18,7 +18,7 @@ To make the most of the advanced features provided by the script, follow these s
    cd fivem-server-manager
    ```
 
-3. **Make the Script Executable** (Required on Debian/Linux):  
+3. **Make the Script Executable** (Ubuntu, Debian, etc.):  
    Before running the script, you need to grant execution permissions:
    ```bash
    chmod +x fivemanager.sh
