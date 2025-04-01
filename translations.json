@@ -248,7 +248,9 @@
     "mariadb": "MariaDB",
     "running": "Running",
     "nginx": "Nginx",
-    "redis": "Redis"
+    "redis": "Redis",
+    "update_server": "Update Server",
+    "update_server_desc": "Update server artifacts to latest or recommended version"
   },
   "nl": {
     "attempting_to_install": "Poging tot installeren van",
@@ -499,7 +501,9 @@
     "mariadb": "MariaDB",
     "running": "Actief",
     "nginx": "Nginx",
-    "redis": "Redis"
+    "redis": "Redis",
+    "update_server": "Server bijwerken",
+    "update_server_desc": "Update serverbestanden naar de nieuwste of aanbevolen versie"
   },
   "es": {
     "attempting_to_install": "Intentando instalar",
@@ -750,6 +754,8 @@
     "mariadb": "MariaDB",
     "running": "En funcionamiento",
     "nginx": "Nginx",
-    "redis": "Redis"
+    "redis": "Redis",
+    "update_server": "Actualizar Servidor",
+    "update_server_desc": "Actualizar artefactos del servidor a la última o versión recomendada"
   }
 }
