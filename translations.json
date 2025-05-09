@@ -275,8 +275,9 @@
     "performing_fresh_install": "Performing fresh installation",
     "installation_completed_successfully": "Installation completed successfully",
     "installation_failed": "Installation failed",
-    "do_you_want_to_allow_txadmin": "Do you want to allow txAdmin?",
-    "firewall_rules_configured_successfully": "Firewall rules configured successfully (y/n)"
+    "do_you_want_to_allow_txadmin": "Do you want to allow txAdmin? (y/N)",
+    "firewall_rules_configured_successfully": "Firewall rules configured successfully",
+    "enter_full_path_custom_config": "Enter full path for custom config"
   },
   "nl": {
     "attempting_to_install": "Poging tot installeren van",
@@ -553,7 +554,10 @@
     "no_existing_installation": "No se encontró instalación existente",
     "performing_fresh_install": "Realizando instalación nueva",
     "installation_completed_successfully": "Instalación completada exitosamente",
-    "installation_failed": "Instalación fallida"
+    "installation_failed": "Instalación fallida",
+    "do_you_want_to_allow_txadmin": "Wil je txAdmin toestaan? (y/N)",
+    "firewall_rules_configured_successfully": "Firewallregels succesvol geconfigureerd",
+    "enter_full_path_custom_config": "Voer het volledige pad in voor de aangepaste configuratie"
   },
   "es": {
     "attempting_to_install": "Intentando instalar",
@@ -830,6 +834,9 @@
     "no_existing_installation": "No se encontró instalación existente",
     "performing_fresh_install": "Realizando instalación nueva",
     "installation_completed_successfully": "Instalación completada exitosamente",
-    "installation_failed": "Instalación fallida"
+    "installation_failed": "Instalación fallida",
+    "do_you_want_to_allow_txadmin": "¿Deseas permitir txAdmin? (y/N)",
+    "firewall_rules_configured_successfully": "Reglas de firewall configuradas correctamente",
+    "enter_full_path_custom_config": "Introduce la ruta completa para la configuración personalizada"
   }
 }
