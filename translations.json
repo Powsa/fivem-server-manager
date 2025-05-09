@@ -277,7 +277,9 @@
     "installation_failed": "Installation failed",
     "do_you_want_to_allow_txadmin": "Do you want to allow txAdmin? (y/N)",
     "firewall_rules_configured_successfully": "Firewall rules configured successfully",
-    "enter_full_path_custom_config": "Enter full path for custom config"
+    "enter_full_path_custom_config": "Enter full path for custom config",
+    "auto_server": "Auto-Start Server",
+    "auto_server_desc": "Configure a server to start automatically on reboot"
   },
   "nl": {
     "attempting_to_install": "Poging tot installeren van",
