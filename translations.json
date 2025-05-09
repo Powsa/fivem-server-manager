@@ -276,7 +276,7 @@
     "installation_completed_successfully": "Installation completed successfully",
     "installation_failed": "Installation failed",
     "do_you_want_to_allow_txadmin": "Do you want to allow txAdmin?",
-    "firewall_rules_configured_successfully": "Firewall rules configured successfully [Y/n]"
+    "firewall_rules_configured_successfully": "Firewall rules configured successfully (y/n)"
   },
   "nl": {
     "attempting_to_install": "Poging tot installeren van",
