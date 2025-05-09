@@ -274,7 +274,8 @@
     "no_existing_installation": "No existing installation found",
     "performing_fresh_install": "Performing fresh installation",
     "installation_completed_successfully": "Installation completed successfully",
-    "installation_failed": "Installation failed"
+    "installation_failed": "Installation failed",
+    "do_you_want_to_allow_txadmin": "Do you want to allow txAdmin?"
   },
   "nl": {
     "attempting_to_install": "Poging tot installeren van",
