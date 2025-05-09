@@ -279,7 +279,7 @@
     "firewall_rules_configured_successfully": "Firewall rules configured successfully",
     "enter_full_path_custom_config": "Enter full path for custom config",
     "auto_server": "Auto-Start Server",
-    "auto_server_desc": "Configure a server to start automatically on reboot"
+    "auto_server_desc": "Configure server to auto start on reboot"
   },
   "nl": {
     "attempting_to_install": "Poging tot installeren van",
